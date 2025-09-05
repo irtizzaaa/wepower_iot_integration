@@ -1,0 +1,7 @@
+{
+  "name": "WePower IoT",
+  "content_in_root": false,
+  "domains": ["wepower_iot"],
+  "homeassistant": "2021.12.0",
+  "iot_class": "Local Push"
+}
