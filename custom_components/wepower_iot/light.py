@@ -10,7 +10,7 @@ from homeassistant.components.light import (
     ColorMode,
     ATTR_BRIGHTNESS,
     ATTR_RGB_COLOR,
-    ATTR_COLOR_TEMP,
+    ATTR_COLOR_TEMP_KELVIN,
     ATTR_TRANSITION,
 )
 from homeassistant.config_entries import ConfigEntry
@@ -91,10 +91,9 @@ class WePowerIoTLight(LightEntity):
         self._attr_color_mode = ColorMode.RGB
         self._attr_brightness = 255
         self._attr_rgb_color = (255, 255, 255)
-        self._attr_color_temp = 4000
-        self._attr_min_mireds = 153  # 6500K
-        self._attr_max_mireds = 500  # 2000K
-        self._attr_supported_features = 0  # No special features for now
+        self._attr_color_temp_kelvin = 4000
+        self._attr_min_color_temp_kelvin = 2000  # Warm white
+        self._attr_max_color_temp_kelvin = 6500  # Cool white
         
     def _update_state(self):
         """Update light state from device data."""
