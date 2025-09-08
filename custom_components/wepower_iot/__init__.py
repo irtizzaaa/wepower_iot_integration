@@ -104,8 +104,8 @@ async def _register_services(hass: HomeAssistant, device_manager: WePowerIoTDevi
             device_id = device.get("device_id")
             if device_id and device_id not in device_manager._created_entities:
                 device_manager._created_entities.add(device_id)
-                # Trigger entity creation
-                hass.bus.async_fire(f"{DOMAIN}_create_entity", {"device": device})
+                # Trigger entity creation by calling platform setup
+                await _create_entity_for_device(hass, config_entry, device)
     
     # Register services
     hass.services.async_register(DOMAIN, "add_device", add_device)
@@ -114,3 +114,38 @@ async def _register_services(hass: HomeAssistant, device_manager: WePowerIoTDevi
     hass.services.async_register(DOMAIN, "toggle_zigbee", toggle_zigbee)
     hass.services.async_register(DOMAIN, "scan_devices", scan_devices)
     hass.services.async_register(DOMAIN, "create_entities", create_entities_for_devices)
+
+
+async def _create_entity_for_device(hass: HomeAssistant, config_entry: ConfigEntry, device: dict):
+    """Create entity for a specific device."""
+    from homeassistant.helpers.entity_platform import async_get_platforms
+    
+    category = device.get("category", "sensor")
+    
+    # Get the appropriate platform
+    if category == "sensor":
+        platform = async_get_platforms(hass, DOMAIN, "sensor")
+    elif category == "light":
+        platform = async_get_platforms(hass, DOMAIN, "light")
+    elif category == "switch":
+        platform = async_get_platforms(hass, DOMAIN, "switch")
+    else:
+        return
+    
+    if platform:
+        # Create the entity
+        from .sensor import WePowerIoTSensor
+        from .light import WePowerIoTLight
+        from .switch import WePowerIoTSwitch
+        
+        device_manager = hass.data[DOMAIN][config_entry.entry_id].get("device_manager")
+        
+        if category == "sensor":
+            entity = WePowerIoTSensor(device_manager, device)
+        elif category == "light":
+            entity = WePowerIoTLight(device_manager, device)
+        elif category == "switch":
+            entity = WePowerIoTSwitch(device_manager, device)
+        
+        # Add the entity to the platform
+        platform[0].async_add_entities([entity])
