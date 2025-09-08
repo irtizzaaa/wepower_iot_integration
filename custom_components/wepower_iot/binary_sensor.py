@@ -12,6 +12,7 @@ from homeassistant.config_entries import ConfigEntry
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
 from homeassistant.helpers.entity import DeviceInfo
+from homeassistant.helpers.dispatcher import async_dispatcher_connect
 from homeassistant.const import (
     CONF_DEVICE_ID,
     CONF_NAME,
@@ -21,6 +22,7 @@ from .const import (
     DOMAIN,
     DEVICE_STATUS_CONNECTED,
     DEVICE_STATUS_OFFLINE,
+    SIGNAL_DEVICE_UPDATED,
 )
 
 _LOGGER = logging.getLogger(__name__)
@@ -105,10 +107,12 @@ class WePowerIoTBLESensor(BinarySensorEntity):
         """Call when entity is added to hass."""
         # Subscribe to device manager updates
         self.async_on_remove(
-            self.device_manager.subscribe_to_updates(self._handle_update)
+            async_dispatcher_connect(
+                self.hass, SIGNAL_DEVICE_UPDATED, self._handle_update
+            )
         )
         
-    def _handle_update(self):
+    def _handle_update(self, data):
         """Handle device manager updates."""
         self._update_state()
         self.async_write_ha_state()
@@ -170,10 +174,12 @@ class WePowerIoTZigbeeSensor(BinarySensorEntity):
         """Call when entity is added to hass."""
         # Subscribe to device manager updates
         self.async_on_remove(
-            self.device_manager.subscribe_to_updates(self._handle_update)
+            async_dispatcher_connect(
+                self.hass, SIGNAL_DEVICE_UPDATED, self._handle_update
+            )
         )
         
-    def _handle_update(self):
+    def _handle_update(self, data):
         """Handle device manager updates."""
         self._update_state()
         self.async_write_ha_state()
