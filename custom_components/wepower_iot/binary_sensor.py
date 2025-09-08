@@ -115,6 +115,13 @@ class WePowerIoTBLESensor(BinarySensorEntity):
     def _handle_update(self, data):
         """Handle device manager updates."""
         self._update_state()
+        # Schedule the state write in the main event loop
+        self.hass.loop.call_soon_threadsafe(
+            lambda: self.hass.async_create_task(self._async_write_state())
+        )
+        
+    async def _async_write_state(self):
+        """Async helper to write state."""
         self.async_write_ha_state()
         
     async def async_update(self) -> None:
@@ -182,6 +189,13 @@ class WePowerIoTZigbeeSensor(BinarySensorEntity):
     def _handle_update(self, data):
         """Handle device manager updates."""
         self._update_state()
+        # Schedule the state write in the main event loop
+        self.hass.loop.call_soon_threadsafe(
+            lambda: self.hass.async_create_task(self._async_write_state())
+        )
+        
+    async def _async_write_state(self):
+        """Async helper to write state."""
         self.async_write_ha_state()
         
     async def async_update(self) -> None:
