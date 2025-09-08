@@ -26,13 +26,13 @@ from .const import (
     DEVICE_STATUS_OFFLINE,
     BLE_DISCOVERY_MODE_V0_MANUAL,
     BLE_DISCOVERY_MODE_V1_AUTO,
+    SIGNAL_DEVICE_UPDATED,
 )
 
 _LOGGER = logging.getLogger(__name__)
 
 # Signal for device updates
 SIGNAL_DEVICE_ADDED = f"{DOMAIN}_device_added"
-SIGNAL_DEVICE_UPDATED = f"{DOMAIN}_device_updated"
 SIGNAL_DEVICE_REMOVED = f"{DOMAIN}_device_removed"
 
 class WePowerIoTDeviceManager:
