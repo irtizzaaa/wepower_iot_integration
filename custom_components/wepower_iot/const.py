@@ -54,10 +54,11 @@ BLE_DISCOVERY_MODE_V1_AUTO: Final = "v1_auto"
 
 # Integration name and version
 INTEGRATION_NAME: Final = "WePower IoT"
-INTEGRATION_VERSION: Final = "1.0.4"
+INTEGRATION_VERSION: Final = "1.0.5"
 
 # Signals
 SIGNAL_DEVICE_UPDATED: Final = f"{DOMAIN}_device_updated"
+
 
 
 
