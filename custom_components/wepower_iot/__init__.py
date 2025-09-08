@@ -1,5 +1,8 @@
 """The WePower IoT integration."""
 
+import json
+import logging
+
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.const import Platform
 from homeassistant.core import HomeAssistant
@@ -8,6 +11,8 @@ from homeassistant.helpers import service
 from .const import DOMAIN
 from .device_management import WePowerIoTDeviceManager
 from .coordinator import WePowerIoTDataCoordinator
+
+_LOGGER = logging.getLogger(__name__)
 
 PLATFORMS: list[Platform] = [
     Platform.BINARY_SENSOR,
@@ -78,22 +83,35 @@ async def _register_services(hass: HomeAssistant, device_manager: WePowerIoTDevi
     
     async def toggle_ble(service_call):
         """Toggle BLE functionality."""
-        enabled = service_call.data.get("enabled", False)
-        # Update config
-        device_manager.config["enable_ble"] = enabled
+        enabled = service_call.data.get("enabled", True)
+        # Send MQTT command to toggle BLE
+        await device_manager.publish_mqtt(
+            "wepower_iot/command/ble/toggle",
+            json.dumps({"enabled": enabled})
+        )
+        _LOGGER.info(f"Sent BLE toggle command: enabled={enabled}")
         hass.bus.async_fire(f"{DOMAIN}_ble_toggled", {"enabled": enabled})
     
     async def toggle_zigbee(service_call):
         """Toggle Zigbee functionality."""
-        enabled = service_call.data.get("enabled", False)
-        # Update config
-        device_manager.config["enable_zigbee"] = enabled
+        enabled = service_call.data.get("enabled", True)
+        # Send MQTT command to toggle Zigbee
+        await device_manager.publish_mqtt(
+            "wepower_iot/command/zigbee/toggle",
+            json.dumps({"enabled": enabled})
+        )
+        _LOGGER.info(f"Sent Zigbee toggle command: enabled={enabled}")
         hass.bus.async_fire(f"{DOMAIN}_zigbee_toggled", {"enabled": enabled})
     
     async def scan_devices(service_call):
         """Scan for devices."""
-        dongle_id = service_call.data.get("dongle_id")
-        # Trigger device scan
+        dongle_id = service_call.data.get("dongle_id", "all")
+        # Send MQTT command to scan for devices
+        await device_manager.publish_mqtt(
+            "wepower_iot/command/scan",
+            json.dumps({"dongle_id": dongle_id})
+        )
+        _LOGGER.info(f"Sent scan command for dongle: {dongle_id}")
         hass.bus.async_fire(f"{DOMAIN}_scan_triggered", {"dongle_id": dongle_id})
     
     async def create_entities_for_devices(service_call):
