@@ -96,9 +96,21 @@ async def _register_services(hass: HomeAssistant, device_manager: WePowerIoTDevi
         # Trigger device scan
         hass.bus.async_fire(f"{DOMAIN}_scan_triggered", {"dongle_id": dongle_id})
     
+    async def create_entities_for_devices(service_call):
+        """Create entities for all devices in device manager."""
+        # Get all devices and create entities for them
+        all_devices = device_manager.get_all_devices()
+        for device in all_devices:
+            device_id = device.get("device_id")
+            if device_id and device_id not in device_manager._created_entities:
+                device_manager._created_entities.add(device_id)
+                # Trigger entity creation
+                hass.bus.async_fire(f"{DOMAIN}_create_entity", {"device": device})
+    
     # Register services
     hass.services.async_register(DOMAIN, "add_device", add_device)
     hass.services.async_register(DOMAIN, "remove_device", remove_device)
     hass.services.async_register(DOMAIN, "toggle_ble", toggle_ble)
     hass.services.async_register(DOMAIN, "toggle_zigbee", toggle_zigbee)
     hass.services.async_register(DOMAIN, "scan_devices", scan_devices)
+    hass.services.async_register(DOMAIN, "create_entities", create_entities_for_devices)
