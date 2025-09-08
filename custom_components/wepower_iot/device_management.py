@@ -117,7 +117,9 @@ class WePowerIoTDeviceManager:
             self.devices[device_id] = device
             
             # Notify subscribers
-            async_dispatcher_send(self.hass, SIGNAL_DEVICE_ADDED, device)
+            self.hass.async_create_task(
+                self._async_notify_device_added(device)
+            )
             
             _LOGGER.info(f"Device added: {device_id}")
             return True
@@ -202,8 +204,10 @@ class WePowerIoTDeviceManager:
                 "timestamp": data.get("timestamp")
             }
             
-            # Notify subscribers
-            async_dispatcher_send(self.hass, SIGNAL_DEVICE_UPDATED, self.dongles[dongle_id])
+            # Notify subscribers using hass.async_create_task to ensure proper thread
+            self.hass.async_create_task(
+                self._async_notify_dongle_update(self.dongles[dongle_id])
+            )
             
         except Exception as e:
             _LOGGER.error(f"Error handling dongle message: {e}")
@@ -218,7 +222,10 @@ class WePowerIoTDeviceManager:
             device_id = data.get("device_id")
             if device_id:
                 self.devices[device_id] = data
-                async_dispatcher_send(self.hass, SIGNAL_DEVICE_UPDATED, data)
+                # Notify subscribers using hass.async_create_task to ensure proper thread
+                self.hass.async_create_task(
+                    self._async_notify_device_update(data)
+                )
                 
         except Exception as e:
             _LOGGER.error(f"Error handling device message: {e}")
@@ -230,6 +237,18 @@ class WePowerIoTDeviceManager:
             _LOGGER.debug(f"Published MQTT message: {topic} -> {payload}")
         except Exception as e:
             _LOGGER.error(f"Failed to publish MQTT message: {e}")
+            
+    async def _async_notify_dongle_update(self, dongle_data):
+        """Async helper to notify dongle updates."""
+        async_dispatcher_send(self.hass, SIGNAL_DEVICE_UPDATED, dongle_data)
+        
+    async def _async_notify_device_update(self, device_data):
+        """Async helper to notify device updates."""
+        async_dispatcher_send(self.hass, SIGNAL_DEVICE_UPDATED, device_data)
+        
+    async def _async_notify_device_added(self, device_data):
+        """Async helper to notify device added."""
+        async_dispatcher_send(self.hass, SIGNAL_DEVICE_ADDED, device_data)
             
     @property
     def mqtt_client(self):
@@ -260,7 +279,9 @@ class WePowerIoTDeviceManager:
                 if random.random() < 0.1:  # 10% chance
                     device["status"] = "offline"
                     device["last_seen"] = datetime.now(timezone.utc).isoformat()
-                    async_dispatcher_send(self.hass, SIGNAL_DEVICE_UPDATED, device)
+                    self.hass.async_create_task(
+                        self._async_notify_device_update(device)
+                    )
                     
     def subscribe_to_device_updates(self, device_id: str, callback):
         """Subscribe to device updates."""
