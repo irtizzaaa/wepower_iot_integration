@@ -1,13 +1,13 @@
 {
   "domain": "wepower_iot",
   "name": "WePower IoT",
-  "codeowners": ["@home-assistant/core"],
-  "config_flow": true,
+  "documentation": "https://github.com/irtizzaaa/wepower_iot_integration",
   "dependencies": ["mqtt"],
-  "documentation": "https://www.home-assistant.io/integrations/wepower_iot",
-  "integration_type": "hub",
-  "iot_class": "local_push",
+  "codeowners": ["@irtizzaaa"],
   "requirements": ["paho-mqtt>=1.6.1"],
-  "version": "2.0.0"
+  "version": "1.0.0",
+  "config_flow": true,
+  "iot_class": "local_push",
+  "supported_brands": ["WePower"],
+  "integration_type": "device"
 }
-
