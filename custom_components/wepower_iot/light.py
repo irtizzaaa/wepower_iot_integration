@@ -17,6 +17,7 @@ from homeassistant.config_entries import ConfigEntry
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
 from homeassistant.helpers.entity import DeviceInfo
+from homeassistant.helpers.dispatcher import async_dispatcher_connect
 from homeassistant.const import (
     CONF_DEVICE_ID,
     CONF_NAME,
@@ -27,9 +28,15 @@ from .const import (
     DEVICE_CATEGORY_LIGHT,
     DEVICE_STATUS_CONNECTED,
     DEVICE_STATUS_OFFLINE,
+    SIGNAL_DEVICE_UPDATED,
+    SIGNAL_DEVICE_ADDED,
 )
 
 _LOGGER = logging.getLogger(__name__)
+
+# Global variable to track entities and add callback
+_entities = []
+_add_entities_callback = None
 
 
 async def async_setup_entry(
@@ -38,6 +45,10 @@ async def async_setup_entry(
     async_add_entities: AddEntitiesCallback,
 ) -> None:
     """Set up WePower IoT lights from a config entry."""
+    global _entities, _add_entities_callback
+    
+    # Store the callback for dynamic entity creation
+    _add_entities_callback = async_add_entities
     
     # Get device manager
     device_manager = hass.data[DOMAIN][config_entry.entry_id].get("device_manager")
@@ -52,9 +63,28 @@ async def async_setup_entry(
     for device in light_devices:
         light_entity = WePowerIoTLight(device_manager, device)
         entities.append(light_entity)
+        _entities.append(light_entity)
         
     if entities:
         async_add_entities(entities)
+    
+    # Listen for new devices
+    async def handle_new_device(device_data):
+        """Handle new device added."""
+        if device_data.get("category") == DEVICE_CATEGORY_LIGHT:
+            # Check if entity already exists
+            device_id = device_data.get("device_id")
+            existing_entity = next((e for e in _entities if e.device_id == device_id), None)
+            
+            if not existing_entity:
+                # Create new entity
+                new_entity = WePowerIoTLight(device_manager, device_data)
+                _entities.append(new_entity)
+                _add_entities_callback([new_entity])
+                _LOGGER.info(f"Created new light entity for device: {device_id}")
+    
+    # Connect to dispatcher
+    async_dispatcher_connect(hass, SIGNAL_DEVICE_ADDED, handle_new_device)
 
 
 class WePowerIoTLight(LightEntity):
