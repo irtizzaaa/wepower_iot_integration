@@ -11,7 +11,7 @@ from homeassistant.const import CONF_DEVICE_ID, CONF_NAME
 from homeassistant.helpers import entity_registry as er
 from homeassistant.helpers.entity import DeviceInfo
 from homeassistant.helpers.dispatcher import async_dispatcher_send
-from homeassistant.components.mqtt import async_publish
+from homeassistant.components.mqtt import async_publish, async_subscribe
 
 from .const import (
     DOMAIN,
@@ -154,16 +154,19 @@ class WePowerIoTDeviceManager:
         """Subscribe to relevant MQTT topics."""
         try:
             # Subscribe to MQTT topics for device updates
-            await self.hass.components.mqtt.async_subscribe(
+            await async_subscribe(
+                self.hass,
                 "wepower_iot/status",
                 self._handle_status_message
             )
-            await self.hass.components.mqtt.async_subscribe(
+            await async_subscribe(
+                self.hass,
                 "wepower_iot/dongle/+/+",
                 self._handle_dongle_message
             )
-            await self.hass.components.mqtt.async_subscribe(
-                "wepower_iot/+/+/+",
+            await async_subscribe(
+                self.hass,
+                "wepower_iot/device/+/+",
                 self._handle_device_message
             )
             _LOGGER.info("Device manager subscribed to MQTT topics")
@@ -173,7 +176,6 @@ class WePowerIoTDeviceManager:
     def _handle_status_message(self, msg):
         """Handle status messages from add-on."""
         try:
-            import json
             data = json.loads(msg.payload)
             _LOGGER.info(f"Status message received: {data}")
         except Exception as e:
@@ -182,7 +184,6 @@ class WePowerIoTDeviceManager:
     def _handle_dongle_message(self, msg):
         """Handle dongle status messages."""
         try:
-            import json
             data = json.loads(msg.payload)
             _LOGGER.info(f"Dongle message received: {data}")
             
@@ -210,7 +211,6 @@ class WePowerIoTDeviceManager:
     def _handle_device_message(self, msg):
         """Handle device messages."""
         try:
-            import json
             data = json.loads(msg.payload)
             _LOGGER.info(f"Device message received: {data}")
             
