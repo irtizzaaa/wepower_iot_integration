@@ -49,6 +49,11 @@ class WePowerIoTDataCoordinator(DataUpdateCoordinator):
         self._unsub_dispatcher = async_dispatcher_connect(
             self.hass, SIGNAL_DEVICE_UPDATED, self._handle_device_update
         )
+        
+    async def async_shutdown(self) -> None:
+        """Shutdown the coordinator."""
+        if hasattr(self, '_unsub_dispatcher') and self._unsub_dispatcher:
+            self._unsub_dispatcher()
 
     def _handle_device_update(self, device_data: Dict[str, Any]) -> None:
         """Handle device update from dispatcher."""
