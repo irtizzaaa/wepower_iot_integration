@@ -46,10 +46,8 @@ class WePowerIoTDataCoordinator(DataUpdateCoordinator):
     async def async_setup(self) -> None:
         """Set up the coordinator."""
         # Listen for device updates
-        self.async_on_remove(
-            async_dispatcher_connect(
-                self.hass, SIGNAL_DEVICE_UPDATED, self._handle_device_update
-            )
+        self._unsub_dispatcher = async_dispatcher_connect(
+            self.hass, SIGNAL_DEVICE_UPDATED, self._handle_device_update
         )
 
     def _handle_device_update(self, device_data: Dict[str, Any]) -> None:
@@ -60,3 +58,8 @@ class WePowerIoTDataCoordinator(DataUpdateCoordinator):
             "dongles": self.device_manager.get_dongles(),
             "last_update": self.device_manager.devices,
         })
+
+    async def async_shutdown(self) -> None:
+        """Shutdown the coordinator."""
+        if hasattr(self, '_unsub_dispatcher') and self._unsub_dispatcher:
+            self._unsub_dispatcher()
