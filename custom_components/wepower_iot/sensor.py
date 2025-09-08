@@ -88,7 +88,7 @@ class WePowerIoTSensor(SensorEntity):
         device_category = self.device.get("category", "")
         
         # Default properties
-        self._attr_device_class = SensorDeviceClass.GENERIC
+        self._attr_device_class = None  # No specific device class
         self._attr_state_class = SensorStateClass.MEASUREMENT
         self._attr_native_unit_of_measurement = None
         
