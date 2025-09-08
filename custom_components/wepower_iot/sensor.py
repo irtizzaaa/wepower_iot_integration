@@ -13,6 +13,7 @@ from homeassistant.config_entries import ConfigEntry
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
 from homeassistant.helpers.entity import DeviceInfo
+from homeassistant.helpers.dispatcher import async_dispatcher_connect
 from homeassistant.const import (
     CONF_DEVICE_ID,
     CONF_NAME,
@@ -28,6 +29,7 @@ from .const import (
     DEVICE_CATEGORY_SENSOR,
     DEVICE_STATUS_CONNECTED,
     DEVICE_STATUS_OFFLINE,
+    SIGNAL_DEVICE_UPDATED,
 )
 
 _LOGGER = logging.getLogger(__name__)
@@ -132,7 +134,9 @@ class WePowerIoTSensor(SensorEntity):
         
         if status == DEVICE_STATUS_CONNECTED:
             # Get sensor value from device properties
-            sensor_value = self.device.get("sensor_value")
+            properties = self.device.get("properties", {})
+            sensor_value = properties.get("sensor_value")
+            
             if sensor_value is not None:
                 self._attr_native_value = sensor_value
             else:
@@ -194,15 +198,24 @@ class WePowerIoTSensor(SensorEntity):
         """Call when entity is added to hass."""
         # Subscribe to device updates
         self.async_on_remove(
-            self.device_manager.subscribe_to_device_updates(
-                self.device_id, self._handle_device_update
+            async_dispatcher_connect(
+                self.hass, SIGNAL_DEVICE_UPDATED, self._handle_device_update
             )
         )
         
-    def _handle_device_update(self, device: Dict[str, Any]):
+    def _handle_device_update(self, data):
         """Handle device updates."""
-        self.device = device
-        self._update_state()
+        # Check if this update is for our device
+        if isinstance(data, dict) and data.get("device_id") == self.device_id:
+            self.device = data
+            self._update_state()
+            # Schedule the state write in the main event loop
+            self.hass.loop.call_soon_threadsafe(
+                lambda: self.hass.async_create_task(self._async_write_state())
+            )
+            
+    async def _async_write_state(self):
+        """Async helper to write state."""
         self.async_write_ha_state()
         
     async def async_update(self) -> None:
