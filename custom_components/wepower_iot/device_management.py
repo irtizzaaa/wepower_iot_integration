@@ -116,7 +116,7 @@ class WePowerIoTDeviceManager:
             
             self.devices[device_id] = device
             
-            # Notify subscribers
+            # Notify subscribers - this is called from async context, so it's safe
             self.hass.async_create_task(
                 self._async_notify_device_added(device)
             )
@@ -204,9 +204,11 @@ class WePowerIoTDeviceManager:
                 "timestamp": data.get("timestamp")
             }
             
-            # Notify subscribers using hass.async_create_task to ensure proper thread
-            self.hass.async_create_task(
-                self._async_notify_dongle_update(self.dongles[dongle_id])
+            # Schedule the dispatcher call in the main event loop
+            self.hass.loop.call_soon_threadsafe(
+                lambda: self.hass.async_create_task(
+                    self._async_notify_dongle_update(self.dongles[dongle_id])
+                )
             )
             
         except Exception as e:
@@ -222,9 +224,11 @@ class WePowerIoTDeviceManager:
             device_id = data.get("device_id")
             if device_id:
                 self.devices[device_id] = data
-                # Notify subscribers using hass.async_create_task to ensure proper thread
-                self.hass.async_create_task(
-                    self._async_notify_device_update(data)
+                # Schedule the dispatcher call in the main event loop
+                self.hass.loop.call_soon_threadsafe(
+                    lambda: self.hass.async_create_task(
+                        self._async_notify_device_update(data)
+                    )
                 )
                 
         except Exception as e:
