@@ -47,6 +47,7 @@ class WePowerIoTDeviceManager:
         self.entity_registry = er.async_get(hass)
         self._subscribers = {}
         self._mqtt_client = None
+        self._created_entities = set()
         
     async def start(self):
         """Start the device manager."""
@@ -95,6 +96,8 @@ class WePowerIoTDeviceManager:
         
         for device_data in test_devices:
             await self.add_device(device_data)
+            # Mark as created entity
+            self._created_entities.add(device_data["device_id"])
             
     async def add_device(self, device_data: Dict[str, Any]) -> bool:
         """Add a new device manually."""
@@ -249,6 +252,13 @@ class WePowerIoTDeviceManager:
     async def _async_notify_device_update(self, device_data):
         """Async helper to notify device updates."""
         async_dispatcher_send(self.hass, SIGNAL_DEVICE_UPDATED, device_data)
+        
+        # Check if this is a new device that needs entity creation
+        device_id = device_data.get("device_id")
+        if device_id and device_id not in self._created_entities:
+            self._created_entities.add(device_id)
+            # Signal that a new device was added
+            async_dispatcher_send(self.hass, SIGNAL_DEVICE_ADDED, device_data)
         
     async def _async_notify_device_added(self, device_data):
         """Async helper to notify device added."""
