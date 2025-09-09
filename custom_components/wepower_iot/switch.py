@@ -156,14 +156,18 @@ class WePowerIoTSwitch(SwitchEntity):
         
         if status == DEVICE_STATUS_CONNECTED:
             # Get switch state from device properties
-            switch_state = self.device.get("switch_state", False)
+            properties = self.device.get("properties", {})
+            switch_state = properties.get("switch_state", False)
             self._attr_is_on = bool(switch_state)
         else:
             # Device is offline
             self._attr_is_on = False
             
-        # Update available state
-        self._attr_available = status == DEVICE_STATUS_CONNECTED
+        # Update available state - be more lenient for switches
+        if status == DEVICE_STATUS_CONNECTED or self.device_id in self.device_manager.devices:
+            self._attr_available = True
+        else:
+            self._attr_available = False
         
     async def async_turn_on(self, **kwargs: Any) -> None:
         """Turn the switch on."""
@@ -181,6 +185,7 @@ class WePowerIoTSwitch(SwitchEntity):
                 
             # Update local state
             self._attr_is_on = True
+            self._just_controlled = True
             self.async_write_ha_state()
             
         except Exception as e:
@@ -208,6 +213,7 @@ class WePowerIoTSwitch(SwitchEntity):
             
             # Update local state
             self._attr_is_on = False
+            self._just_controlled = True
             self.async_write_ha_state()
             
         except Exception as e:
@@ -301,8 +307,16 @@ class WePowerIoTSwitch(SwitchEntity):
         """Handle device updates."""
         # Check if this update is for our device
         if isinstance(data, dict) and data.get("device_id") == self.device_id:
+            # Preserve current switch state if it exists
+            current_state = self._attr_is_on
             self.device = data
             self._update_state()
+            
+            # If we just turned the switch on/off, preserve that state
+            if hasattr(self, '_just_controlled') and self._just_controlled:
+                self._attr_is_on = current_state
+                self._just_controlled = False
+                
             # Schedule the state write in the main event loop
             self.hass.loop.call_soon_threadsafe(
                 lambda: self.hass.async_create_task(self._async_write_state())
