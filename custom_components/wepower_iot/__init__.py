@@ -86,8 +86,8 @@ async def _register_services(hass: HomeAssistant, device_manager: WePowerIoTDevi
         enabled = service_call.data.get("enabled", True)
         # Send MQTT command to toggle BLE
         await device_manager.publish_mqtt(
-            "wepower_iot/command/ble/toggle",
-            json.dumps({"enabled": enabled})
+            "wepower_iot/control/ble/toggle",
+            json.dumps({"action": "toggle_ble", "enabled": enabled})
         )
         _LOGGER.info(f"Sent BLE toggle command: enabled={enabled}")
         hass.bus.async_fire(f"{DOMAIN}_ble_toggled", {"enabled": enabled})
@@ -97,8 +97,8 @@ async def _register_services(hass: HomeAssistant, device_manager: WePowerIoTDevi
         enabled = service_call.data.get("enabled", True)
         # Send MQTT command to toggle Zigbee
         await device_manager.publish_mqtt(
-            "wepower_iot/command/zigbee/toggle",
-            json.dumps({"enabled": enabled})
+            "wepower_iot/control/zigbee/toggle",
+            json.dumps({"action": "toggle_zigbee", "enabled": enabled})
         )
         _LOGGER.info(f"Sent Zigbee toggle command: enabled={enabled}")
         hass.bus.async_fire(f"{DOMAIN}_zigbee_toggled", {"enabled": enabled})
