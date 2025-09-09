@@ -132,21 +132,22 @@ class WePowerIoTLight(LightEntity):
         
         if status == DEVICE_STATUS_CONNECTED:
             # Get light state from device properties
-            light_state = self.device.get("light_state", False)
+            properties = self.device.get("properties", {})
+            light_state = properties.get("light_state", False)
             self._attr_is_on = bool(light_state)
             
             # Get brightness if available
-            brightness = self.device.get("brightness")
+            brightness = properties.get("brightness")
             if brightness is not None:
                 self._attr_brightness = brightness
                 
             # Get RGB color if available
-            rgb_color = self.device.get("rgb_color")
+            rgb_color = properties.get("rgb_color")
             if rgb_color:
                 self._attr_rgb_color = tuple(rgb_color)
                 
             # Get color temperature if available
-            color_temp = self.device.get("color_temp")
+            color_temp = properties.get("color_temp")
             if color_temp is not None:
                 self._attr_color_temp = color_temp
                 
@@ -154,8 +155,11 @@ class WePowerIoTLight(LightEntity):
             # Device is offline
             self._attr_is_on = False
             
-        # Update available state
-        self._attr_available = status == DEVICE_STATUS_CONNECTED
+        # Update available state - be more lenient for lights
+        if status == DEVICE_STATUS_CONNECTED or self.device_id in self.device_manager.devices:
+            self._attr_available = True
+        else:
+            self._attr_available = False
         
     async def async_turn_on(self, **kwargs: Any) -> None:
         """Turn the light on."""
@@ -221,6 +225,7 @@ class WePowerIoTLight(LightEntity):
             
             # Update local state
             self._attr_is_on = True
+            self._just_controlled = True
             self.async_write_ha_state()
             
         except Exception as e:
@@ -253,6 +258,7 @@ class WePowerIoTLight(LightEntity):
             
             # Update local state
             self._attr_is_on = False
+            self._just_controlled = True
             self.async_write_ha_state()
             
         except Exception as e:
@@ -291,8 +297,20 @@ class WePowerIoTLight(LightEntity):
         """Handle device updates."""
         # Check if this update is for our device
         if isinstance(data, dict) and data.get("device_id") == self.device_id:
+            # Preserve current light state if it exists
+            current_state = self._attr_is_on
+            current_brightness = self._attr_brightness
+            current_color = self._attr_rgb_color
             self.device = data
             self._update_state()
+            
+            # If we just controlled the light, preserve that state
+            if hasattr(self, '_just_controlled') and self._just_controlled:
+                self._attr_is_on = current_state
+                self._attr_brightness = current_brightness
+                self._attr_rgb_color = current_color
+                self._just_controlled = False
+                
             # Schedule the state write in the main event loop
             self.hass.loop.call_soon_threadsafe(
                 lambda: self.hass.async_create_task(self._async_write_state())
