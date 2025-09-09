@@ -174,6 +174,11 @@ class WePowerIoTDeviceManager:
                 "wepower_iot/device/+/+",
                 self._handle_device_message
             )
+            await async_subscribe(
+                self.hass,
+                "wepower_iot/control/+/+",
+                self._handle_control_message
+            )
             _LOGGER.info("Device manager subscribed to MQTT topics")
         except Exception as e:
             _LOGGER.error(f"Error subscribing to MQTT: {e}")
@@ -226,7 +231,18 @@ class WePowerIoTDeviceManager:
             # Update device status
             device_id = data.get("device_id")
             if device_id:
+                # Ensure device has all required fields
+                if "name" not in data:
+                    data["name"] = device_id
+                if "last_seen" not in data:
+                    from datetime import datetime, timezone
+                    data["last_seen"] = datetime.now(timezone.utc).isoformat()
+                if "properties" not in data:
+                    data["properties"] = {}
+                    
                 self.devices[device_id] = data
+                _LOGGER.info(f"Updated device {device_id} with status: {data.get('status')}")
+                
                 # Schedule the dispatcher call in the main event loop
                 self.hass.loop.call_soon_threadsafe(
                     lambda: self.hass.async_create_task(
@@ -236,6 +252,29 @@ class WePowerIoTDeviceManager:
                 
         except Exception as e:
             _LOGGER.error(f"Error handling device message: {e}")
+            
+    def _handle_control_message(self, msg):
+        """Handle control messages from add-on."""
+        try:
+            data = json.loads(msg.payload)
+            _LOGGER.info(f"Control message received: {data}")
+            
+            # Handle different control actions
+            action = data.get("action")
+            if action == "toggle_ble":
+                enabled = data.get("enabled", False)
+                _LOGGER.info(f"BLE toggle command received: {enabled}")
+                # Update BLE status in config
+                self.config["enable_ble"] = enabled
+                
+            elif action == "toggle_zigbee":
+                enabled = data.get("enabled", False)
+                _LOGGER.info(f"Zigbee toggle command received: {enabled}")
+                # Update Zigbee status in config
+                self.config["enable_zigbee"] = enabled
+                
+        except Exception as e:
+            _LOGGER.error(f"Error handling control message: {e}")
         
     async def publish_mqtt(self, topic: str, payload: str):
         """Publish MQTT message."""
