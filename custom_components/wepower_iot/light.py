@@ -208,6 +208,17 @@ class WePowerIoTLight(LightEntity):
             # Log the command for debugging
             _LOGGER.info(f"Light command sent: {turn_on_message}")
             
+            # Update device state in device manager
+            if self.device_id in self.device_manager.devices:
+                self.device_manager.devices[self.device_id]["properties"]["light_state"] = True
+                self.device_manager.devices[self.device_id]["status"] = "connected"
+                if "brightness" in turn_on_message:
+                    self.device_manager.devices[self.device_id]["properties"]["brightness"] = turn_on_message["brightness"]
+                if "rgb_color" in turn_on_message:
+                    self.device_manager.devices[self.device_id]["properties"]["rgb_color"] = turn_on_message["rgb_color"]
+                if "color_temp" in turn_on_message:
+                    self.device_manager.devices[self.device_id]["properties"]["color_temp"] = turn_on_message["color_temp"]
+            
             # Update local state
             self._attr_is_on = True
             self.async_write_ha_state()
@@ -234,6 +245,11 @@ class WePowerIoTLight(LightEntity):
                 f"wepower_iot/device/{self.device_id}/command",
                 json.dumps(turn_off_message)
             )
+            
+            # Update device state in device manager
+            if self.device_id in self.device_manager.devices:
+                self.device_manager.devices[self.device_id]["properties"]["light_state"] = False
+                self.device_manager.devices[self.device_id]["status"] = "connected"
             
             # Update local state
             self._attr_is_on = False
