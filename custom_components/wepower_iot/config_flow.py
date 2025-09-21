@@ -42,10 +42,10 @@ class WePowerIoTConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
                 step_id="user",
                 data_schema=vol.Schema(
                     {
-                        vol.Required("integration_type"): vol.In([
-                            ("mqtt", "MQTT-based (Traditional)"),
-                            ("ble", "Bluetooth Low Energy (BLE)")
-                        ]),
+                        vol.Required("integration_type"): vol.In({
+                            "mqtt": "MQTT-based (Traditional)",
+                            "ble": "Bluetooth Low Energy (BLE)"
+                        }),
                     }
                 ),
             )
