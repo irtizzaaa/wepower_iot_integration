@@ -78,27 +78,17 @@ class WePowerIoTDeviceManager:
         """Add some test devices for demonstration."""
         test_devices = [
             {
-                "device_id": "test_ble_leak_sensor",
-                "device_type": "ble",
-                "category": "sensor",
-                "name": "Test BLE Leak Sensor",
-                "ble_discovery_mode": "v0_manual",
-                "status": "connected"
-            },
-            {
                 "device_id": "test_zigbee_light_switch",
                 "device_type": "zigbee",
                 "category": "light",
                 "name": "Test Zigbee Light Switch",
-                "ble_discovery_mode": "v1_auto",
                 "status": "connected"
             },
             {
-                "device_id": "test_ble_temperature",
-                "device_type": "ble",
+                "device_id": "test_zigbee_sensor",
+                "device_type": "zigbee",
                 "category": "sensor",
-                "name": "Test BLE Temperature Sensor",
-                "ble_discovery_mode": "v1_auto",
+                "name": "Test Zigbee Temperature Sensor",
                 "status": "connected"
             }
         ]
@@ -275,13 +265,7 @@ class WePowerIoTDeviceManager:
             
             # Handle different control actions
             action = data.get("action")
-            if action == "toggle_ble":
-                enabled = data.get("enabled", False)
-                _LOGGER.info(f"BLE toggle command received: {enabled}")
-                # Update BLE status in config
-                self.config["enable_ble"] = enabled
-                
-            elif action == "toggle_zigbee":
+            if action == "toggle_zigbee":
                 enabled = data.get("enabled", False)
                 _LOGGER.info(f"Zigbee toggle command received: {enabled}")
                 # Update Zigbee status in config
