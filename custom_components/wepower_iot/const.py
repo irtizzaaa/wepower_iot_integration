@@ -7,7 +7,6 @@ DOMAIN: Final = "wepower_iot"
 CONF_MQTT_BROKER: Final = "mqtt_broker"
 CONF_MQTT_USERNAME: Final = "mqtt_username"
 CONF_MQTT_PASSWORD: Final = "mqtt_password"
-CONF_ENABLE_BLE: Final = "enable_ble"
 CONF_ENABLE_ZIGBEE: Final = "enable_zigbee"
 CONF_SCAN_INTERVAL: Final = "scan_interval"
 CONF_HEARTBEAT_INTERVAL: Final = "heartbeat_interval"
@@ -16,7 +15,6 @@ CONF_HEARTBEAT_INTERVAL: Final = "heartbeat_interval"
 DEFAULT_MQTT_BROKER: Final = "mqtt://homeassistant:1883"
 DEFAULT_SCAN_INTERVAL: Final = 0.02
 DEFAULT_HEARTBEAT_INTERVAL: Final = 10.0
-DEFAULT_ENABLE_BLE: Final = True
 DEFAULT_ENABLE_ZIGBEE: Final = True
 
 # MQTT Topics
@@ -54,21 +52,8 @@ BLE_DISCOVERY_MODE_V1_AUTO: Final = "v1_auto"
 
 # Integration name and version
 INTEGRATION_NAME: Final = "WePower IoT"
-INTEGRATION_VERSION: Final = "1.0.23"
+INTEGRATION_VERSION: Final = "1.0.24"
 
 # Signals
 SIGNAL_DEVICE_UPDATED: Final = f"{DOMAIN}_device_updated"
 SIGNAL_DEVICE_ADDED: Final = f"{DOMAIN}_device_added"
-
-
-
-
-
-
-
-
-
-
-
-
-
