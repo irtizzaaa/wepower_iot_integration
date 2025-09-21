@@ -1,13 +1,31 @@
 {
   "domain": "wepower_iot",
   "name": "WePower IoT",
-  "documentation": "https://github.com/irtizzaaa/wepower_iot_integration",
-  "dependencies": ["mqtt"],
-  "codeowners": ["@irtizzaaa"],
-  "requirements": ["paho-mqtt>=1.6.1"],
-  "version": "1.0.15",
+  "bluetooth": [
+    {
+      "local_name": "WePower*",
+      "connectable": false
+    },
+    {
+      "local_name": "WP*",
+      "connectable": false
+    },
+    {
+      "manufacturer_id": 65535,
+      "manufacturer_data_start": [87, 80],
+      "connectable": false
+    },
+    {
+      "service_uuid": "0000180a-0000-1000-8000-00805f9b34fb",
+      "connectable": false
+    }
+  ],
+  "codeowners": ["@wepower"],
   "config_flow": true,
+  "dependencies": ["bluetooth"],
+  "documentation": "https://github.com/wepower/wepower-iot-homeassistant",
   "iot_class": "local_push",
-  "supported_brands": ["WePower"],
-  "integration_type": "device"
+  "loggers": ["wepower_iot_ble"],
+  "requirements": ["wepower-iot-ble==0.1.0"],
+  "version": "1.1.0"
 }
