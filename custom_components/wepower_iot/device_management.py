@@ -51,8 +51,11 @@ class WePowerIoTDeviceManager:
         
     async def start(self):
         """Start the device manager."""
-        # Subscribe to MQTT topics
-        await self._subscribe_to_mqtt()
+        # Subscribe to MQTT topics only if MQTT broker is configured
+        if self.config.get(CONF_MQTT_BROKER):
+            await self._subscribe_to_mqtt()
+        else:
+            _LOGGER.info("MQTT broker not configured, skipping MQTT subscription")
         
         # Start device discovery
         asyncio.create_task(self._device_discovery_loop())
@@ -158,6 +161,11 @@ class WePowerIoTDeviceManager:
     async def _subscribe_to_mqtt(self):
         """Subscribe to relevant MQTT topics."""
         try:
+            # Check if MQTT is available
+            if not await mqtt.async_wait_for_mqtt_client(self.hass):
+                _LOGGER.warning("MQTT client not available, skipping MQTT subscription")
+                return
+                
             # Subscribe to MQTT topics for device updates
             await async_subscribe(
                 self.hass,
@@ -181,7 +189,7 @@ class WePowerIoTDeviceManager:
             )
             _LOGGER.info("Device manager subscribed to MQTT topics")
         except Exception as e:
-            _LOGGER.error(f"Error subscribing to MQTT: {e}")
+            _LOGGER.warning(f"Could not subscribe to MQTT topics: {e}")
             
     def _handle_status_message(self, msg):
         """Handle status messages from add-on."""
