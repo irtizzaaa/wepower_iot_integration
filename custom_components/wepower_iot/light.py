@@ -185,17 +185,17 @@ class WePowerIoTLight(LightEntity):
                 self._attr_color_mode = ColorMode.RGB
                 
             # Handle color temperature
-            if ATTR_COLOR_TEMP in kwargs:
-                color_temp = kwargs[ATTR_COLOR_TEMP]
-                turn_on_message["color_temp"] = color_temp
-                self._attr_color_temp = color_temp
-                self._attr_color_mode = ColorMode.COLOR_TEMP
-            elif ATTR_COLOR_TEMP_KELVIN in kwargs:
+            if ATTR_COLOR_TEMP_KELVIN in kwargs:
                 color_temp_kelvin = kwargs[ATTR_COLOR_TEMP_KELVIN]
-                # Convert Kelvin to mireds
+                # Convert Kelvin to mireds for Home Assistant
                 color_temp_mireds = 1000000 // color_temp_kelvin
                 turn_on_message["color_temp"] = color_temp_mireds
                 self._attr_color_temp = color_temp_mireds
+                self._attr_color_mode = ColorMode.COLOR_TEMP
+            elif ATTR_COLOR_TEMP in kwargs:  # Fallback for backward compatibility
+                color_temp = kwargs[ATTR_COLOR_TEMP]
+                turn_on_message["color_temp"] = color_temp
+                self._attr_color_temp = color_temp
                 self._attr_color_mode = ColorMode.COLOR_TEMP
                 
             # Handle transition
