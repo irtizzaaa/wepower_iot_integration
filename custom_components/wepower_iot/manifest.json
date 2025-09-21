@@ -3,11 +3,15 @@
   "name": "WePower IoT",
   "bluetooth": [
     {
-      "local_name": "WePower*",
+      "local_name": "WePower",
       "connectable": false
     },
     {
-      "local_name": "WP*",
+      "local_name": "WePower-",
+      "connectable": false
+    },
+    {
+      "local_name": "WePower_",
       "connectable": false
     },
     {
@@ -27,5 +31,5 @@
   "iot_class": "local_push",
   "loggers": ["wepower_iot_ble"],
   "requirements": ["wepower-iot-ble==0.1.0"],
-  "version": "1.0.16"
+  "version": "1.0.17"
 }
