@@ -30,5 +30,5 @@
   "documentation": "https://github.com/wepower/wepower-iot-homeassistant",
   "iot_class": "local_push",
   "loggers": ["wepower_iot_ble"],
-  "version": "1.0.24"
+  "version": "1.0.25"
 }
