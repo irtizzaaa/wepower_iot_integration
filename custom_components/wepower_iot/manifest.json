@@ -27,5 +27,5 @@
   "iot_class": "local_push",
   "loggers": ["wepower_iot_ble"],
   "requirements": ["wepower-iot-ble==0.1.0"],
-  "version": "1.1.0"
+  "version": "1.0.16"
 }
