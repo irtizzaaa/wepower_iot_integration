@@ -11,10 +11,12 @@ from homeassistant.const import CONF_DEVICE_ID, CONF_NAME
 from homeassistant.helpers import entity_registry as er
 from homeassistant.helpers.entity import DeviceInfo
 from homeassistant.helpers.dispatcher import async_dispatcher_send
+from homeassistant.components import mqtt
 from homeassistant.components.mqtt import async_publish, async_subscribe
 
 from .const import (
     DOMAIN,
+    CONF_MQTT_BROKER,
     DEVICE_TYPE_BLE,
     DEVICE_TYPE_ZIGBEE,
     DEVICE_CATEGORY_SENSOR,
@@ -26,6 +28,10 @@ from .const import (
     DEVICE_STATUS_OFFLINE,
     BLE_DISCOVERY_MODE_V0_MANUAL,
     BLE_DISCOVERY_MODE_V1_AUTO,
+    MQTT_TOPIC_STATUS,
+    MQTT_TOPIC_DEVICE,
+    MQTT_TOPIC_CONTROL,
+    MQTT_TOPIC_DONGLE,
     SIGNAL_DEVICE_UPDATED,
 )
 
@@ -169,22 +175,22 @@ class WePowerIoTDeviceManager:
             # Subscribe to MQTT topics for device updates
             await async_subscribe(
                 self.hass,
-                "wepower_iot/status",
+                MQTT_TOPIC_STATUS,
                 self._handle_status_message
             )
             await async_subscribe(
                 self.hass,
-                "wepower_iot/dongle/+/+",
+                f"{MQTT_TOPIC_DONGLE}/+/+",
                 self._handle_dongle_message
             )
             await async_subscribe(
                 self.hass,
-                "wepower_iot/device/+/+",
+                f"{MQTT_TOPIC_DEVICE}/+/+",
                 self._handle_device_message
             )
             await async_subscribe(
                 self.hass,
-                "wepower_iot/control/+/+",
+                f"{MQTT_TOPIC_CONTROL}/+/+",
                 self._handle_control_message
             )
             _LOGGER.info("Device manager subscribed to MQTT topics")
