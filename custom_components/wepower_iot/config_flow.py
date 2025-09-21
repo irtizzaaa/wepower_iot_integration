@@ -42,6 +42,32 @@ class WePowerIoTConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
                 step_id="user",
                 data_schema=vol.Schema(
                     {
+                        vol.Required("integration_type"): vol.In([
+                            ("mqtt", "MQTT-based (Traditional)"),
+                            ("ble", "Bluetooth Low Energy (BLE)")
+                        ]),
+                    }
+                ),
+            )
+
+        integration_type = user_input["integration_type"]
+        
+        if integration_type == "ble":
+            # Redirect to BLE config flow
+            return await self.async_step_ble()
+        else:
+            # Continue with MQTT setup
+            return await self.async_step_mqtt()
+
+    async def async_step_mqtt(
+        self, user_input: dict[str, Any] | None = None
+    ) -> FlowResult:
+        """Handle MQTT configuration step."""
+        if user_input is None:
+            return self.async_show_form(
+                step_id="mqtt",
+                data_schema=vol.Schema(
+                    {
                         vol.Required(
                             CONF_MQTT_BROKER, default=DEFAULT_MQTT_BROKER
                         ): str,
@@ -67,7 +93,7 @@ class WePowerIoTConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
         mqtt_broker = user_input[CONF_MQTT_BROKER]
         if not mqtt_broker.startswith(("mqtt://", "mqtts://")):
             return self.async_show_form(
-                step_id="user",
+                step_id="mqtt",
                 data_schema=vol.Schema(
                     {
                         vol.Required(
@@ -94,7 +120,7 @@ class WePowerIoTConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
 
         # Create the config entry
         return self.async_create_entry(
-            title="WePower IoT",
+            title="WePower IoT (MQTT)",
             data={
                 CONF_MQTT_BROKER: mqtt_broker,
                 CONF_MQTT_USERNAME: user_input.get(CONF_MQTT_USERNAME, ""),
@@ -104,6 +130,15 @@ class WePowerIoTConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
                 CONF_SCAN_INTERVAL: user_input[CONF_SCAN_INTERVAL],
                 CONF_HEARTBEAT_INTERVAL: user_input[CONF_HEARTBEAT_INTERVAL],
             },
+        )
+
+    async def async_step_ble(self, user_input: dict[str, Any] | None = None) -> FlowResult:
+        """Handle BLE configuration step."""
+        return self.async_abort(
+            reason="ble_not_configured",
+            description_placeholders={
+                "message": "BLE devices are automatically discovered. Please use the 'Add Integration' button and select 'WePower IoT' to discover BLE devices."
+            }
         )
 
     async def async_step_import(self, import_info: dict[str, Any]) -> FlowResult:
@@ -131,7 +166,4 @@ class WePowerIoTConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
 
         # Add device logic would go here
         # For now, just return to main flow
-        return self.async_create_entry(
-            title=f"Device {user_input['device_id']}",
-            data=user_input,
-        )
+        return self.async_abort(reason="device_added")
