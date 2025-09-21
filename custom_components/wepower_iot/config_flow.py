@@ -74,9 +74,6 @@ class WePowerIoTConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
                         vol.Optional(CONF_MQTT_USERNAME): str,
                         vol.Optional(CONF_MQTT_PASSWORD): str,
                         vol.Required(
-                            CONF_ENABLE_BLE, default=DEFAULT_ENABLE_BLE
-                        ): bool,
-                        vol.Required(
                             CONF_ENABLE_ZIGBEE, default=DEFAULT_ENABLE_ZIGBEE
                         ): bool,
                         vol.Required(
@@ -125,7 +122,6 @@ class WePowerIoTConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
                 CONF_MQTT_BROKER: mqtt_broker,
                 CONF_MQTT_USERNAME: user_input.get(CONF_MQTT_USERNAME, ""),
                 CONF_MQTT_PASSWORD: user_input.get(CONF_MQTT_PASSWORD, ""),
-                CONF_ENABLE_BLE: user_input[CONF_ENABLE_BLE],
                 CONF_ENABLE_ZIGBEE: user_input[CONF_ENABLE_ZIGBEE],
                 CONF_SCAN_INTERVAL: user_input[CONF_SCAN_INTERVAL],
                 CONF_HEARTBEAT_INTERVAL: user_input[CONF_HEARTBEAT_INTERVAL],
@@ -134,10 +130,21 @@ class WePowerIoTConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
 
     async def async_step_ble(self, user_input: dict[str, Any] | None = None) -> FlowResult:
         """Handle BLE configuration step."""
-        return self.async_abort(
-            reason="ble_not_configured",
+        return self.async_show_form(
+            step_id="ble_info",
+            data_schema=vol.Schema({}),
             description_placeholders={
-                "message": "BLE devices are automatically discovered. Please use the 'Add Integration' button and select 'WePower IoT' to discover BLE devices."
+                "message": "BLE devices are automatically discovered by Home Assistant's Bluetooth integration. No manual configuration needed!"
+            }
+        )
+    
+    async def async_step_ble_info(self, user_input: dict[str, Any] | None = None) -> FlowResult:
+        """Show BLE information and complete."""
+        return self.async_create_entry(
+            title="WePower IoT BLE (Auto-Discovery)",
+            data={
+                "integration_type": "ble",
+                "auto_discovery": True
             }
         )
 
