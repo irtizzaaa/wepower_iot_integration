@@ -11,6 +11,7 @@ from homeassistant.helpers import service
 from .const import DOMAIN
 from .device_management import WePowerIoTDeviceManager
 from .coordinator import WePowerIoTDataCoordinator
+from .ble_coordinator import WePowerIoTBluetoothProcessorCoordinator
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -21,37 +22,64 @@ PLATFORMS: list[Platform] = [
     Platform.LIGHT,
 ]
 
+# BLE platform
+BLE_PLATFORMS: list[Platform] = [
+    Platform.SENSOR,
+]
+
 async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     """Set up WePower IoT from a config entry."""
     hass.data.setdefault(DOMAIN, {})
     
-    # Create device manager
-    device_manager = WePowerIoTDeviceManager(hass, entry.data)
-    await device_manager.start()
-    
-    # Create coordinator
-    coordinator = WePowerIoTDataCoordinator(hass, device_manager)
-    await coordinator.async_setup()
-    
-    # Store device manager and coordinator in hass data
-    hass.data[DOMAIN][entry.entry_id] = {
-        "device_manager": device_manager,
-        "coordinator": coordinator,
-        "config": entry.data
-    }
+    # Check if this is a BLE device entry
+    if entry.data.get("address"):
+        # This is a BLE device entry
+        coordinator = WePowerIoTBluetoothProcessorCoordinator(hass, entry)
+        await coordinator.async_init()
+        entry.runtime_data = coordinator
+        
+        # Forward the setup to BLE platforms
+        await hass.config_entries.async_forward_entry_setups(entry, BLE_PLATFORMS)
+        
+        # Start the coordinator
+        entry.async_on_unload(coordinator.async_start())
+        
+        return True
+    else:
+        # This is a traditional MQTT-based entry
+        # Create device manager
+        device_manager = WePowerIoTDeviceManager(hass, entry.data)
+        await device_manager.start()
+        
+        # Create coordinator
+        coordinator = WePowerIoTDataCoordinator(hass, device_manager)
+        await coordinator.async_setup()
+        
+        # Store device manager and coordinator in hass data
+        hass.data[DOMAIN][entry.entry_id] = {
+            "device_manager": device_manager,
+            "coordinator": coordinator,
+            "config": entry.data
+        }
 
-    # Register services
-    await _register_services(hass, device_manager)
+        # Register services
+        await _register_services(hass, device_manager)
 
-    # Forward the setup to the relevant platforms
-    await hass.config_entries.async_forward_entry_setups(entry, PLATFORMS)
+        # Forward the setup to the relevant platforms
+        await hass.config_entries.async_forward_entry_setups(entry, PLATFORMS)
 
-    return True
+        return True
 
 
 async def async_unload_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     """Unload a config entry."""
-    unload_ok = await hass.config_entries.async_unload_platforms(entry, PLATFORMS)
+    # Check if this is a BLE device entry
+    if entry.data.get("address"):
+        # Unload BLE platforms
+        unload_ok = await hass.config_entries.async_unload_platforms(entry, BLE_PLATFORMS)
+    else:
+        # Unload traditional platforms
+        unload_ok = await hass.config_entries.async_unload_platforms(entry, PLATFORMS)
     if unload_ok:
         # Clean up device manager and coordinator
         if entry.entry_id in hass.data[DOMAIN]:
