@@ -13,14 +13,12 @@ from .const import (
     CONF_MQTT_BROKER,
     CONF_MQTT_USERNAME,
     CONF_MQTT_PASSWORD,
-    CONF_ENABLE_BLE,
     CONF_ENABLE_ZIGBEE,
     CONF_SCAN_INTERVAL,
     CONF_HEARTBEAT_INTERVAL,
     DEFAULT_MQTT_BROKER,
     DEFAULT_SCAN_INTERVAL,
     DEFAULT_HEARTBEAT_INTERVAL,
-    DEFAULT_ENABLE_BLE,
     DEFAULT_ENABLE_ZIGBEE,
     DOMAIN,
 )
@@ -98,9 +96,6 @@ class WePowerIoTConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
                         ): str,
                         vol.Optional(CONF_MQTT_USERNAME): str,
                         vol.Optional(CONF_MQTT_PASSWORD): str,
-                        vol.Required(
-                            CONF_ENABLE_BLE, default=user_input[CONF_ENABLE_BLE]
-                        ): bool,
                         vol.Required(
                             CONF_ENABLE_ZIGBEE, default=user_input[CONF_ENABLE_ZIGBEE]
                         ): bool,
