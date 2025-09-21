@@ -17,7 +17,6 @@ from homeassistant.components.mqtt import async_publish, async_subscribe
 from .const import (
     DOMAIN,
     CONF_MQTT_BROKER,
-    DEVICE_TYPE_BLE,
     DEVICE_TYPE_ZIGBEE,
     DEVICE_CATEGORY_SENSOR,
     DEVICE_CATEGORY_SWITCH,
@@ -26,8 +25,6 @@ from .const import (
     DEVICE_CATEGORY_TOGGLE,
     DEVICE_STATUS_CONNECTED,
     DEVICE_STATUS_OFFLINE,
-    BLE_DISCOVERY_MODE_V0_MANUAL,
-    BLE_DISCOVERY_MODE_V1_AUTO,
     MQTT_TOPIC_STATUS,
     MQTT_TOPIC_DEVICE,
     MQTT_TOPIC_CONTROL,
