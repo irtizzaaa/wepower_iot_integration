@@ -81,25 +81,21 @@ class WePowerIoTBLESensor(BinarySensorEntity):
         
     def _update_state(self):
         """Update sensor state from device manager."""
-        # Check if any BLE dongles are connected
-        ble_dongles = [d for d in self.device_manager.get_dongles() 
-                      if d.get("device_type") == "ble" and 
-                      d.get("status") == DEVICE_STATUS_CONNECTED]
+        # Since we removed dongles, check if any BLE devices are configured
+        ble_devices = [d for d in self.device_manager.get_all_devices() 
+                      if d.get("device_type") == "ble"]
         
-        self._attr_is_on = len(ble_dongles) > 0
+        self._attr_is_on = len(ble_devices) > 0
         
     @property
     def extra_state_attributes(self) -> Dict[str, Any]:
         """Return entity specific state attributes."""
-        ble_dongles = [d for d in self.device_manager.get_dongles() 
+        ble_devices = [d for d in self.device_manager.get_all_devices() 
                       if d.get("device_type") == "ble"]
         
         return {
-            "dongle_count": len(ble_dongles),
-            "connected_dongles": [d.get("port") for d in ble_dongles 
-                                if d.get("status") == DEVICE_STATUS_CONNECTED],
-            "offline_dongles": [d.get("port") for d in ble_dongles 
-                               if d.get("status") == DEVICE_STATUS_OFFLINE],
+            "device_count": len(ble_devices),
+            "configured_devices": [d.get("device_id") for d in ble_devices],
             "last_update": datetime.now(timezone.utc).isoformat(),
         }
         
@@ -155,25 +151,21 @@ class WePowerIoTZigbeeSensor(BinarySensorEntity):
         
     def _update_state(self):
         """Update sensor state from device manager."""
-        # Check if any Zigbee dongles are connected
-        zigbee_dongles = [d for d in self.device_manager.get_dongles() 
-                         if d.get("device_type") == "zigbee" and 
-                         d.get("status") == DEVICE_STATUS_CONNECTED]
+        # Check if any Zigbee devices are configured
+        zigbee_devices = [d for d in self.device_manager.get_all_devices() 
+                         if d.get("device_type") == "zigbee"]
         
-        self._attr_is_on = len(zigbee_dongles) > 0
+        self._attr_is_on = len(zigbee_devices) > 0
         
     @property
     def extra_state_attributes(self) -> Dict[str, Any]:
         """Return entity specific state attributes."""
-        zigbee_dongles = [d for d in self.device_manager.get_dongles() 
+        zigbee_devices = [d for d in self.device_manager.get_all_devices() 
                          if d.get("device_type") == "zigbee"]
         
         return {
-            "dongle_count": len(zigbee_dongles),
-            "connected_dongles": [d.get("port") for d in zigbee_dongles 
-                                if d.get("status") == DEVICE_STATUS_CONNECTED],
-            "offline_dongles": [d.get("port") for d in zigbee_dongles 
-                               if d.get("status") == DEVICE_STATUS_OFFLINE],
+            "device_count": len(zigbee_devices),
+            "configured_devices": [d.get("device_id") for d in zigbee_devices],
             "last_update": datetime.now(timezone.utc).isoformat(),
         }
         
