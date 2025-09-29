@@ -148,14 +148,25 @@ class WePowerIoTBluetoothProcessorCoordinator(
             return {}
         
         # Parse packet structure: Company ID (2) + Flags (1) + Encrypted Data (16) + CRC (1) = 18 bytes
-        company_id = struct.unpack('<H', data[0:2])[0]  # 2 bytes, little-endian
-        flags = data[2]  # 1 byte
-        encrypted_data = data[3:19]  # 16 bytes (positions 3-18)
-        crc = data[18]  # 1 byte (position 18)
+        if len(data) < 18:
+            _LOGGER.error("🔴 PACKET TOO SHORT: %d bytes (need 18)", len(data))
+            return {}
         
-        _LOGGER.info("📦 PACKET STRUCTURE: Company ID=0x%04X, Flags=0x%02X, CRC=0x%02X", 
-                    company_id, flags, crc)
-        _LOGGER.info("🔐 ENCRYPTED DATA (16 bytes): %s", encrypted_data.hex())
+        _LOGGER.info("🔍 PACKET DEBUG: Length=%d, Data=%s", len(data), data.hex())
+        
+        try:
+            company_id = struct.unpack('<H', data[0:2])[0]  # 2 bytes, little-endian
+            flags = data[2]  # 1 byte
+            encrypted_data = data[3:18]  # 15 bytes (positions 3-17)
+            crc = data[17]  # 1 byte (position 17, last byte)
+            
+            _LOGGER.info("📦 PACKET STRUCTURE: Company ID=0x%04X, Flags=0x%02X, CRC=0x%02X", 
+                        company_id, flags, crc)
+            _LOGGER.info("🔐 ENCRYPTED DATA (%d bytes): %s", len(encrypted_data), encrypted_data.hex())
+            
+        except (IndexError, struct.error) as e:
+            _LOGGER.error("🔴 PACKET PARSING ERROR: %s", e)
+            return {}
         
         # Get decryption key from config entry
         decryption_key = None
