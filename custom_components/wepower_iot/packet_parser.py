@@ -53,7 +53,10 @@ class WePowerPacket:
         self.company_id = COMPANY_ID  # WePower company ID (filtered by HA)
         self.flags = WePowerPacketFlags(raw_data[0])  # 1 byte flags
         self.encrypted_data = WePowerEncryptedData(raw_data[1:17])  # 16 bytes encrypted data
-        self.crc = raw_data[16]  # 1 byte CRC
+        self.crc = raw_data[17]  # 1 byte CRC (position 17, not 16!)
+        
+        _LOGGER.info("🔍 PACKET STRUCTURE: Length=%d, Flags=0x%02X, CRC=0x%02X", 
+                    len(raw_data), raw_data[0], self.crc)
     
     def is_valid_company_id(self) -> bool:
         """Check if this is a WePower packet."""
@@ -64,6 +67,8 @@ class WePowerPacket:
         # Calculate CRC for all data except the last byte (CRC field)
         data_to_check = self.raw_data[:-1]
         calculated_crc = self._calculate_crc8(data_to_check)
+        _LOGGER.info("🔍 CRC VALIDATION: Data=%s, Calculated=0x%02X, Expected=0x%02X, Match=%s", 
+                    data_to_check.hex(), calculated_crc, self.crc, calculated_crc == self.crc)
         return calculated_crc == self.crc
     
     def _calculate_crc8(self, data: bytes) -> int:
