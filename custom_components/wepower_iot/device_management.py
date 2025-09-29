@@ -61,38 +61,11 @@ class WePowerIoTDeviceManager:
         # Start device discovery
         asyncio.create_task(self._device_discovery_loop())
         
-        # Add some test devices for demonstration
-        await self._add_test_devices()
-        
     async def stop(self):
         """Stop the device manager."""
         # Cleanup tasks
         pass
         
-    async def _add_test_devices(self):
-        """Add some test devices for demonstration."""
-        test_devices = [
-            {
-                "device_id": "test_zigbee_light_switch",
-                "device_type": "zigbee",
-                "category": "light",
-                "name": "Test Zigbee Light Switch",
-                "status": "connected"
-            },
-            {
-                "device_id": "test_zigbee_sensor",
-                "device_type": "zigbee",
-                "category": "sensor",
-                "name": "Test Zigbee Temperature Sensor",
-                "status": "connected"
-            }
-        ]
-        
-        for device_data in test_devices:
-            await self.add_device(device_data)
-            # Mark as created entity
-            self._created_entities.add(device_data["device_id"])
-            
     async def add_device(self, device_data: Dict[str, Any]) -> bool:
         """Add a new device manually."""
         try:
