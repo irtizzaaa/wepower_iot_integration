@@ -26,7 +26,7 @@ STEP_USER_DATA_SCHEMA = vol.Schema(
         vol.Required(CONF_ADDRESS): str,
         vol.Required(CONF_DECRYPTION_KEY): str,
         vol.Optional(CONF_DEVICE_NAME): str,
-        vol.Optional(CONF_SENSOR_TYPE, default=4): vol.In({
+        vol.Optional(CONF_SENSOR_TYPE, default=4): vol.Select({
             1: "Temperature Sensor",
             2: "Humidity Sensor", 
             3: "Pressure Sensor",
@@ -39,7 +39,7 @@ STEP_DISCOVERY_DATA_SCHEMA = vol.Schema(
     {
         vol.Required(CONF_DECRYPTION_KEY): str,
         vol.Optional(CONF_DEVICE_NAME): str,
-        vol.Optional(CONF_SENSOR_TYPE, default=4): vol.In({
+        vol.Optional(CONF_SENSOR_TYPE, default=4): vol.Select({
             1: "Temperature Sensor",
             2: "Humidity Sensor", 
             3: "Pressure Sensor",
