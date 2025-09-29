@@ -92,7 +92,7 @@ class WePowerPacket:
         """Decrypt the encrypted data using AES-ECB."""
         try:
             # Check if decryption is needed based on encrypt_status flag
-            if self.flags.encrypt_status == 1:
+            if self.flags.encrypt_status == 0:
                 # Data is not encrypted, return as-is
                 decrypted_data = self.encrypted_data.data_bytes
             else:
