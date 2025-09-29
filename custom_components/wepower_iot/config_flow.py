@@ -6,7 +6,7 @@ from typing import Any
 import voluptuous as vol
 
 from homeassistant import config_entries
-from homeassistant.const import CONF_HOST, CONF_PASSWORD, CONF_PORT, CONF_USERNAME
+from homeassistant.const import CONF_HOST, CONF_PASSWORD, CONF_PORT, CONF_USERNAME, CONF_NAME, CONF_ADDRESS
 from homeassistant.data_entry_flow import FlowResult
 
 from .const import (
@@ -21,6 +21,9 @@ from .const import (
     DEFAULT_HEARTBEAT_INTERVAL,
     DEFAULT_ENABLE_ZIGBEE,
     DOMAIN,
+    CONF_DECRYPTION_KEY,
+    CONF_DEVICE_NAME,
+    CONF_SENSOR_TYPE,
 )
 
 _LOGGER = logging.getLogger(__name__)
@@ -124,13 +127,86 @@ class WePowerIoTConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
         )
 
     async def async_step_ble(self, user_input: dict[str, Any] | None = None) -> FlowResult:
-        """Handle BLE configuration step - redirect to BLE config flow."""
-        # Import here to avoid circular imports
-        from .ble_config_flow import WePowerIoTBluetoothConfigFlow
-        
-        # Create a BLE config flow instance and redirect to user step
-        ble_flow = WePowerIoTBluetoothConfigFlow()
-        return await ble_flow.async_step_user()
+        """Handle BLE configuration step."""
+        if user_input is not None:
+            address = user_input[CONF_ADDRESS].upper()
+            name = user_input[CONF_NAME]
+            decryption_key = user_input[CONF_DECRYPTION_KEY]
+            device_name = user_input.get(CONF_DEVICE_NAME, name)
+            sensor_type = int(user_input.get(CONF_SENSOR_TYPE, "4"))
+            
+            # Validate decryption key format
+            try:
+                bytes.fromhex(decryption_key)
+                if len(decryption_key) != 32:  # 16 bytes = 32 hex chars
+                    return self.async_show_form(
+                        step_id="ble",
+                        data_schema=vol.Schema({
+                            vol.Required(CONF_NAME, default=name): str,
+                            vol.Required(CONF_ADDRESS, default=address): str,
+                            vol.Required(CONF_DECRYPTION_KEY, default=decryption_key): str,
+                            vol.Optional(CONF_DEVICE_NAME, default=device_name): str,
+                            vol.Optional(CONF_SENSOR_TYPE, default="4"): vol.In({
+                                "1": "Temperature Sensor",
+                                "2": "Humidity Sensor", 
+                                "3": "Pressure Sensor",
+                                "4": "Leak Sensor (Default)"
+                            }),
+                        }),
+                        errors={"base": "invalid_decryption_key_length"},
+                    )
+            except ValueError:
+                return self.async_show_form(
+                    step_id="ble",
+                    data_schema=vol.Schema({
+                        vol.Required(CONF_NAME, default=name): str,
+                        vol.Required(CONF_ADDRESS, default=address): str,
+                        vol.Required(CONF_DECRYPTION_KEY, default=decryption_key): str,
+                        vol.Optional(CONF_DEVICE_NAME, default=device_name): str,
+                        vol.Optional(CONF_SENSOR_TYPE, default="4"): vol.In({
+                            "1": "Temperature Sensor",
+                            "2": "Humidity Sensor", 
+                            "3": "Pressure Sensor",
+                            "4": "Leak Sensor (Default)"
+                        }),
+                    }),
+                    errors={"base": "invalid_decryption_key_format"},
+                )
+            
+            # Check if already configured
+            await self.async_set_unique_id(address)
+            self._abort_if_unique_id_configured()
+            
+            # Create the config entry
+            return self.async_create_entry(
+                title=device_name,
+                data={
+                    CONF_NAME: name,
+                    CONF_ADDRESS: address,
+                    CONF_DECRYPTION_KEY: decryption_key,
+                    CONF_DEVICE_NAME: device_name,
+                    CONF_SENSOR_TYPE: sensor_type,
+                },
+            )
+
+        return self.async_show_form(
+            step_id="ble",
+            data_schema=vol.Schema({
+                vol.Required(CONF_NAME): str,
+                vol.Required(CONF_ADDRESS): str,
+                vol.Required(CONF_DECRYPTION_KEY): str,
+                vol.Optional(CONF_DEVICE_NAME): str,
+                vol.Optional(CONF_SENSOR_TYPE, default="4"): vol.In({
+                    "1": "Temperature Sensor",
+                    "2": "Humidity Sensor", 
+                    "3": "Pressure Sensor",
+                    "4": "Leak Sensor (Default)"
+                }),
+            }),
+            description_placeholders={
+                "message": "Manually provision a WePower IoT device by entering its MAC address and decryption key.\n\nSensor Types:\n• Type 1: Temperature Sensor\n• Type 2: Humidity Sensor\n• Type 3: Pressure Sensor\n• Type 4: Leak Sensor (Default)\n\nDecryption Key: 32-character hex string (16 bytes)"
+            }
+        )
 
     async def async_step_import(self, import_info: dict[str, Any]) -> FlowResult:
         """Handle import from configuration.yaml."""
