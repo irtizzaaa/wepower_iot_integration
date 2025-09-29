@@ -1,3 +1,4 @@
+
 """BLE sensor platform for WePower IoT integration."""
 
 import logging
@@ -171,9 +172,11 @@ class WePowerIoTBLESensor(SensorEntity):
             return
             
         data = self.coordinator.data
+        _LOGGER.info("🔄 UPDATING SENSOR: %s | Coordinator data: %s", self.address, data)
         
         # Update device type
         self._device_type = data.get("device_type", "unknown")
+        _LOGGER.info("🏷️ DEVICE TYPE: %s | Type: %s", self.address, self._device_type)
         
         # Set sensor properties based on device type
         self._set_sensor_properties()
@@ -183,7 +186,7 @@ class WePowerIoTBLESensor(SensorEntity):
         
         # Update availability
         self._attr_available = True
-        _LOGGER.debug("BLE sensor %s: Updated with data, available=%s, value=%s, BLE_active=%s, coordinator_available=%s", 
+        _LOGGER.info("✅ SENSOR UPDATED: %s | Available: %s | Value: %s | BLE_active: %s | Coordinator_available: %s", 
                      self.address, self._attr_available, self._attr_native_value, True, self.coordinator.available)
         
     def _set_sensor_properties(self) -> None:
@@ -222,25 +225,38 @@ class WePowerIoTBLESensor(SensorEntity):
             
     def _extract_sensor_value(self, data: Dict[str, Any]) -> None:
         """Extract sensor value from coordinator data."""
+        _LOGGER.info("🔍 EXTRACTING SENSOR VALUE: %s | Data: %s", self.address, data)
+        
         # Try to get sensor value from sensor_data
         sensor_data = data.get("sensor_data", {})
+        _LOGGER.info("📊 SENSOR DATA: %s | Sensor data: %s", self.address, sensor_data)
         
         if "leak_detected" in sensor_data:
             # For leak sensors, return 100 if leak detected, 0 if not
             self._attr_native_value = 100.0 if sensor_data["leak_detected"] else 0.0
+            _LOGGER.info("💧 LEAK SENSOR: %s | Leak detected: %s | Value: %s", 
+                        self.address, sensor_data["leak_detected"], self._attr_native_value)
             
         elif "temperature" in sensor_data:
             self._attr_native_value = sensor_data["temperature"]
+            _LOGGER.info("🌡️ TEMPERATURE SENSOR: %s | Temperature: %s", 
+                        self.address, self._attr_native_value)
             
         elif "humidity" in sensor_data:
             self._attr_native_value = sensor_data["humidity"]
+            _LOGGER.info("💧 HUMIDITY SENSOR: %s | Humidity: %s", 
+                        self.address, self._attr_native_value)
             
         elif "pressure" in sensor_data:
             self._attr_native_value = sensor_data["pressure"]
+            _LOGGER.info("📊 PRESSURE SENSOR: %s | Pressure: %s", 
+                        self.address, self._attr_native_value)
             
         elif "battery_level" in data and data["battery_level"] is not None:
             # Use battery level as a fallback sensor value
             self._attr_native_value = data["battery_level"]
+            _LOGGER.info("🔋 BATTERY LEVEL: %s | Battery: %s", 
+                        self.address, self._attr_native_value)
             
         else:
             # No specific sensor value found, use RSSI as a signal strength indicator
@@ -250,8 +266,11 @@ class WePowerIoTBLESensor(SensorEntity):
                 # RSSI typically ranges from -100 (very weak) to -30 (very strong)
                 signal_percentage = max(0, min(100, (rssi + 100) * 100 / 70))
                 self._attr_native_value = round(signal_percentage, 1)
+                _LOGGER.info("📶 RSSI SIGNAL: %s | RSSI: %s dBm | Signal: %s%%", 
+                            self.address, rssi, self._attr_native_value)
             else:
                 self._attr_native_value = None
+                _LOGGER.warning("⚠️ NO SENSOR VALUE: %s | No RSSI or sensor data found", self.address)
 
     async def async_update(self) -> None:
         """Update sensor state."""
