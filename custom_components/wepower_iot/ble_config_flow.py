@@ -16,7 +16,7 @@ from homeassistant.core import HomeAssistant
 from homeassistant.data_entry_flow import FlowResult
 import voluptuous as vol
 
-from .const import DOMAIN
+from .const import DOMAIN, BLE_COMPANY_ID, CONF_DECRYPTION_KEY, CONF_DEVICE_NAME, CONF_SENSOR_TYPE
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -24,6 +24,17 @@ STEP_USER_DATA_SCHEMA = vol.Schema(
     {
         vol.Required(CONF_NAME): str,
         vol.Required(CONF_ADDRESS): str,
+        vol.Required(CONF_DECRYPTION_KEY): str,
+        vol.Optional(CONF_DEVICE_NAME): str,
+        vol.Optional(CONF_SENSOR_TYPE): vol.In([1, 2, 3, 4]),
+    }
+)
+
+STEP_DISCOVERY_DATA_SCHEMA = vol.Schema(
+    {
+        vol.Required(CONF_DECRYPTION_KEY): str,
+        vol.Optional(CONF_DEVICE_NAME): str,
+        vol.Optional(CONF_SENSOR_TYPE): vol.In([1, 2, 3, 4]),
     }
 )
 
@@ -37,43 +48,32 @@ class WePowerIoTBluetoothConfigFlow(ConfigFlow, domain=DOMAIN):
         """Initialize the config flow."""
         self._discovered_devices: dict[str, BluetoothServiceInfo] = {}
 
-    async def async_step_bluetooth(
-        self, discovery_info: BluetoothServiceInfo
-    ) -> FlowResult:
-        """Handle the bluetooth discovery step."""
-        await self.async_set_unique_id(discovery_info.address)
-        self._abort_if_unique_id_configured()
-        
-        # Check if this looks like a WePower IoT device
-        if not self._is_wepower_device(discovery_info):
-            return self.async_abort(reason="not_supported")
-        
-        self._discovered_devices[discovery_info.address] = discovery_info
-        return await self.async_step_bluetooth_confirm()
-
-    async def async_step_bluetooth_confirm(
-        self, user_input: dict[str, Any] | None = None
-    ) -> FlowResult:
-        """Confirm discovery."""
-        if user_input is not None:
-            return await self.async_step_user()
-
-        self._set_confirm_only()
-        return self.async_show_form(
-            step_id="bluetooth_confirm",
-            description_placeholders={
-                "name": self._discovered_devices[self.unique_id].name or "Unknown WePower Device",
-                "address": self.unique_id,
-            },
-        )
-
     async def async_step_user(
         self, user_input: dict[str, Any] | None = None
     ) -> FlowResult:
-        """Handle the initial step."""
+        """Handle the initial step - manual device provisioning."""
         if user_input is not None:
             address = user_input[CONF_ADDRESS].upper()
             name = user_input[CONF_NAME]
+            decryption_key = user_input[CONF_DECRYPTION_KEY]
+            device_name = user_input.get(CONF_DEVICE_NAME, name)
+            sensor_type = user_input.get(CONF_SENSOR_TYPE, 4)  # Default to leak sensor
+            
+            # Validate decryption key format
+            try:
+                bytes.fromhex(decryption_key)
+                if len(decryption_key) != 32:  # 16 bytes = 32 hex chars
+                    return self.async_show_form(
+                        step_id="user",
+                        data_schema=STEP_USER_DATA_SCHEMA,
+                        errors={"base": "invalid_decryption_key_length"},
+                    )
+            except ValueError:
+                return self.async_show_form(
+                    step_id="user",
+                    data_schema=STEP_USER_DATA_SCHEMA,
+                    errors={"base": "invalid_decryption_key_format"},
+                )
             
             # Check if already configured
             await self.async_set_unique_id(address)
@@ -81,40 +81,56 @@ class WePowerIoTBluetoothConfigFlow(ConfigFlow, domain=DOMAIN):
             
             # Create the config entry
             return self.async_create_entry(
-                title=name,
+                title=device_name,
                 data={
                     CONF_NAME: name,
                     CONF_ADDRESS: address,
+                    CONF_DECRYPTION_KEY: decryption_key,
+                    CONF_DEVICE_NAME: device_name,
+                    CONF_SENSOR_TYPE: sensor_type,
                 },
             )
 
         return self.async_show_form(
             step_id="user",
             data_schema=STEP_USER_DATA_SCHEMA,
+            description_placeholders={
+                "message": "Manually provision a WePower IoT device by entering its MAC address and decryption key."
+            }
         )
 
+    async def async_step_bluetooth(
+        self, discovery_info: BluetoothServiceInfo
+    ) -> FlowResult:
+        """Handle the bluetooth discovery step - but we don't auto-configure."""
+        # We don't auto-configure devices anymore, just show them as available
+        await self.async_set_unique_id(discovery_info.address)
+        self._abort_if_unique_id_configured()
+        
+        # Check if this looks like a WePower IoT device
+        if not self._is_wepower_device(discovery_info):
+            return self.async_abort(reason="not_supported")
+        
+        # Store the device info but don't auto-configure
+        self._discovered_devices[discovery_info.address] = discovery_info
+        return self.async_abort(reason="manual_provisioning_required")
+
     def _is_wepower_device(self, discovery_info: BluetoothServiceInfo) -> bool:
-        """Check if this is a WePower IoT device."""
-        name = discovery_info.name or ""
-        
-        # Check name patterns
-        if any(pattern in name.upper() for pattern in ["WEPOWER", "WP"]):
-            return True
-        
-        # Check manufacturer data
+        """Check if this is a WePower IoT device using new packet format."""
+        # Check manufacturer data for new Company ID
         if discovery_info.manufacturer_data:
             for manufacturer_id, data in discovery_info.manufacturer_data.items():
-                if manufacturer_id == 65535 and len(data) >= 2 and data[0] == 87 and data[1] == 80:
+                if manufacturer_id == BLE_COMPANY_ID and len(data) >= 20:
                     return True
         
-        # Check service UUIDs
-        if discovery_info.service_uuids:
-            for uuid in discovery_info.service_uuids:
-                if "180a" in uuid.lower():  # Device Information Service
-                    return True
+        # Check name patterns as fallback
+        name = discovery_info.name or ""
+        if any(pattern in name.upper() for pattern in ["WEPOWER", "WP"]):
+            return True
         
         return False
 
     async def async_step_import(self, import_data: dict[str, Any]) -> FlowResult:
         """Handle import from configuration.yaml."""
         return await self.async_step_user(import_data)
+
