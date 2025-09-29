@@ -142,7 +142,7 @@ class WePowerPacket:
             
             return {
                 'src_id': decrypted_packet.src_id.hex().upper(),
-                'nwk_id': decrypted_packet.nwk_id.hex().upper(),
+                'nwk_id': struct.unpack('<H', decrypted_packet.nwk_id)[0],  # Convert to integer
                 'fw_version': decrypted_packet.fw_version,
                 'sensor_type': decrypted_packet.sensor_type,  # Keep as bytes
                 'payload': decrypted_packet.payload,  # Keep as bytes
