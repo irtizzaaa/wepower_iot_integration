@@ -202,10 +202,7 @@ class WePowerIoTConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
                     "3": "Pressure Sensor",
                     "4": "Leak Sensor (Default)"
                 }),
-            }),
-            description_placeholders={
-                "message": "Manually provision a WePower IoT device by entering its MAC address and decryption key.\n\nSensor Types:\n• Type 1: Temperature Sensor\n• Type 2: Humidity Sensor\n• Type 3: Pressure Sensor\n• Type 4: Leak Sensor (Default)\n\nDecryption Key: 32-character hex string (16 bytes)"
-            }
+            })
         )
 
     async def async_step_import(self, import_info: dict[str, Any]) -> FlowResult:
