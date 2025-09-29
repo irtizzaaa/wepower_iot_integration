@@ -21,7 +21,8 @@ from homeassistant.core import HomeAssistant, callback
 from homeassistant.exceptions import ConfigEntryNotReady
 from homeassistant.helpers.event import async_track_time_interval
 
-from .const import DOMAIN
+from .const import DOMAIN, BLE_COMPANY_ID, CONF_DECRYPTION_KEY
+from .packet_parser import parse_wepower_packet
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -95,7 +96,7 @@ class WePowerIoTBluetoothProcessorCoordinator(
         return self._parse_advertisement_data(service_info)
 
     def _parse_advertisement_data(self, service_info: BluetoothServiceInfo) -> dict[str, Any]:
-        """Parse WePower IoT advertisement data."""
+        """Parse WePower IoT advertisement data using new packet format."""
         data = {
             "address": service_info.address,
             "name": service_info.name or "Unknown WePower Device",
@@ -107,82 +108,71 @@ class WePowerIoTBluetoothProcessorCoordinator(
             "signal_strength": service_info.rssi,
         }
         
-        # Parse manufacturer data for WePower IoT devices
+        # Parse manufacturer data for WePower IoT devices using new packet format
         if service_info.manufacturer_data:
             for manufacturer_id, manufacturer_data in service_info.manufacturer_data.items():
-                if manufacturer_id == 65535:  # WePower manufacturer ID
-                    data.update(self._parse_wepower_manufacturer_data(manufacturer_data))
+                if manufacturer_id == BLE_COMPANY_ID:  # WePower manufacturer ID (0x5750)
+                    parsed_data = self._parse_wepower_manufacturer_data(manufacturer_data)
+                    if parsed_data:
+                        data.update(parsed_data)
         
-        # Parse service data
-        if service_info.service_data:
-            for service_uuid, service_data in service_info.service_data.items():
-                if "180a" in service_uuid.lower():  # Device Information Service
-                    data.update(self._parse_device_info_service(service_data))
-        
-        # Determine device type based on name patterns
-        name = service_info.name or ""
-        if "leak" in name.lower() or "water" in name.lower():
-            data["device_type"] = "leak_sensor"
-        elif "temp" in name.lower() or "temperature" in name.lower():
-            data["device_type"] = "temperature_sensor"
-        elif "humidity" in name.lower():
-            data["device_type"] = "humidity_sensor"
-        elif "vibration" in name.lower() or "motion" in name.lower():
-            data["device_type"] = "vibration_sensor"
-        elif "pressure" in name.lower():
-            data["device_type"] = "pressure_sensor"
-        elif "air" in name.lower() or "co2" in name.lower():
-            data["device_type"] = "air_quality_sensor"
-        elif "switch" in name.lower():
-            data["device_type"] = "switch"
-        elif "light" in name.lower():
-            data["device_type"] = "light"
+        # Determine device type based on sensor type
+        if 'sensor_data' in data and 'sensor_type' in data['sensor_data']:
+            sensor_type = data['sensor_data']['sensor_type']
+            if sensor_type == 4:
+                data["device_type"] = "leak_sensor"
+            elif sensor_type == 1:
+                data["device_type"] = "temperature_sensor"
+            elif sensor_type == 2:
+                data["device_type"] = "humidity_sensor"
+            elif sensor_type == 3:
+                data["device_type"] = "pressure_sensor"
         
         return data
 
     def _parse_wepower_manufacturer_data(self, data: bytes) -> dict[str, Any]:
-        """Parse WePower IoT manufacturer data."""
-        if len(data) < 2:
+        """Parse WePower IoT manufacturer data using new packet format."""
+        if len(data) < 20:  # New packet format is 20 bytes
             return {}
         
-        parsed = {}
+        # Get decryption key from config entry
+        decryption_key = None
+        if hasattr(self._entry, 'data') and CONF_DECRYPTION_KEY in self._entry.data:
+            try:
+                decryption_key = bytes.fromhex(self._entry.data[CONF_DECRYPTION_KEY])
+            except ValueError:
+                _LOGGER.warning("Invalid decryption key format")
         
-        # WePower IoT protocol parsing
-        if data[0] == 87 and data[1] == 80:  # "WP" prefix
-            if len(data) >= 4:
-                # Device type
-                device_type_code = data[2]
-                parsed["device_type_code"] = device_type_code
-                
-                # Battery level (if available)
-                if len(data) >= 5:
-                    parsed["battery_level"] = data[3]
-                
-                # Sensor data (if available)
-                if len(data) >= 8:
-                    # Temperature (2 bytes, signed, in 0.1°C units)
-                    temp_raw = int.from_bytes(data[4:6], byteorder='little', signed=True)
-                    parsed["sensor_data"]["temperature"] = temp_raw / 10.0
-                    
-                    # Humidity (1 byte, percentage)
-                    if len(data) >= 9:
-                        parsed["sensor_data"]["humidity"] = data[6]
-                    
-                    # Additional sensor data
-                    if len(data) >= 10:
-                        parsed["sensor_data"]["pressure"] = int.from_bytes(data[7:9], byteorder='little')
+        # Parse the packet using the new parser
+        parsed_packet = parse_wepower_packet(data, decryption_key)
         
-        return parsed
-
-    def _parse_device_info_service(self, data: bytes) -> dict[str, Any]:
-        """Parse device information service data."""
-        parsed = {}
+        if not parsed_packet:
+            return {}
         
-        if len(data) >= 2:
-            # Model number or firmware version
-            parsed["firmware_version"] = data.hex()[:4]
+        result = {
+            "company_id": parsed_packet['company_id'],
+            "flags": parsed_packet['flags'],
+            "crc": parsed_packet['crc'],
+        }
         
-        return parsed
+        # Add decrypted data if available
+        if 'decrypted_data' in parsed_packet:
+            result['decrypted_data'] = parsed_packet['decrypted_data']
+        
+        # Add sensor data if available
+        if 'sensor_data' in parsed_packet:
+            result['sensor_data'] = parsed_packet['sensor_data']
+            
+            # Extract specific sensor values
+            sensor_data = parsed_packet['sensor_data']
+            if 'leak_detected' in sensor_data:
+                result['leak_detected'] = sensor_data['leak_detected']
+            if 'event_counter' in sensor_data:
+                result['event_counter'] = sensor_data['event_counter']
+            if 'sensor_event' in sensor_data:
+                result['sensor_event'] = sensor_data['sensor_event']
+        
+        return result
 
     @callback
     def _async_schedule_poll(self, _: datetime) -> None:
@@ -191,3 +181,4 @@ class WePowerIoTBluetoothProcessorCoordinator(
             self._last_service_info, self._last_poll
         ):
             self._debounced_poll.async_schedule_call()
+
