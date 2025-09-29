@@ -10,11 +10,12 @@ from homeassistant.components.bluetooth import (
     BluetoothScanningMode,
     BluetoothServiceInfo,
     BluetoothServiceInfoBleak,
+    BluetoothChange,
     async_ble_device_from_address,
     async_last_service_info,
 )
-from homeassistant.components.bluetooth.active_update_processor import (
-    ActiveBluetoothProcessorCoordinator,
+from homeassistant.components.bluetooth.passive_update_coordinator import (
+    PassiveBluetoothDataUpdateCoordinator,
 )
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.core import HomeAssistant, callback
@@ -30,7 +31,7 @@ FALLBACK_POLL_INTERVAL = timedelta(seconds=60)
 
 
 class WePowerIoTBluetoothProcessorCoordinator(
-    ActiveBluetoothProcessorCoordinator[dict[str, Any]]
+    PassiveBluetoothDataUpdateCoordinator
 ):
     """Coordinator for WePower IoT Bluetooth devices."""
 
@@ -48,11 +49,9 @@ class WePowerIoTBluetoothProcessorCoordinator(
             logger=_LOGGER,
             address=address,
             mode=BluetoothScanningMode.ACTIVE,
-            update_method=self._async_on_update,
-            needs_poll_method=self._async_needs_poll,
-            poll_method=self._async_poll_data,
-            connectable=False,  # We only need to read advertisements
+            connectable=False,
         )
+        self.data = {}
 
     async def async_init(self) -> None:
         """Initialize the coordinator."""
@@ -68,32 +67,18 @@ class WePowerIoTBluetoothProcessorCoordinator(
             )
         )
 
-    async def _async_poll_data(
-        self, last_service_info: BluetoothServiceInfoBleak
-    ) -> dict[str, Any]:
-        """Poll the device for data."""
-        # For WePower IoT devices, we primarily rely on advertisement data
-        # This method can be used for active polling if needed
-        return self._parse_advertisement_data(last_service_info)
-
     @callback
-    def _async_needs_poll(
-        self, service_info: BluetoothServiceInfoBleak, last_poll: float | None
-    ) -> bool:
-        """Check if we need to poll the device."""
-        if self.hass.is_stopping:
-            return False
-        
-        # Poll if we haven't seen an advertisement in the last 30 seconds
-        if last_poll is None:
-            return True
-            
-        return (datetime.now().timestamp() - last_poll) > 30
-
-    @callback
-    def _async_on_update(self, service_info: BluetoothServiceInfo) -> dict[str, Any]:
-        """Handle update callback from the BLE processor."""
-        return self._parse_advertisement_data(service_info)
+    def _async_handle_bluetooth_event(
+        self,
+        service_info: BluetoothServiceInfoBleak,
+        change: BluetoothChange,
+    ) -> None:
+        """Handle a Bluetooth event."""
+        super()._async_handle_bluetooth_event(service_info, change)
+        # Parse the advertisement data and update our data
+        parsed_data = self._parse_advertisement_data(service_info)
+        self.data = parsed_data
+        self.async_update_listeners()
 
     def _parse_advertisement_data(self, service_info: BluetoothServiceInfo) -> dict[str, Any]:
         """Parse WePower IoT advertisement data using new packet format."""
@@ -177,8 +162,7 @@ class WePowerIoTBluetoothProcessorCoordinator(
     @callback
     def _async_schedule_poll(self, _: datetime) -> None:
         """Schedule a poll of the device."""
-        if self._last_service_info and self._async_needs_poll(
-            self._last_service_info, self._last_poll
-        ):
-            self._debounced_poll.async_schedule_call()
+        # Simple polling - just trigger an update if we have data
+        if self.data:
+            self.async_update_listeners()
 
