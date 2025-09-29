@@ -33,11 +33,20 @@ class WePowerEncryptedData:
         self.data_bytes = data
         
         # Parse the encrypted data according to the packet format
+        # Note: This structure might be different for decrypted vs encrypted data
         self.src_id = data[0:3]  # 3 bytes - Source ID (truncated serial number)
         self.nwk_id = data[3:5]  # 2 bytes - Network ID
         self.fw_version = data[5]  # 1 byte - Firmware version
         self.sensor_type = data[6:8]  # 2 bytes - Sensor type
         self.payload = data[8:16]  # 8 bytes - Custom payload
+        
+        _LOGGER.info("🔍 ENCRYPTED DATA PARSING:")
+        _LOGGER.info("  Raw data: %s", data.hex())
+        _LOGGER.info("  SRC ID: %s", self.src_id.hex())
+        _LOGGER.info("  NWK ID: %s", self.nwk_id.hex())
+        _LOGGER.info("  FW Version: %d", self.fw_version)
+        _LOGGER.info("  Sensor Type: %s", self.sensor_type.hex())
+        _LOGGER.info("  Payload: %s", self.payload.hex())
 
 class WePowerPacket:
     """Parser for WePower IoT BLE packets."""
@@ -141,8 +150,16 @@ class WePowerPacket:
     
     def parse_sensor_data(self, decrypted_data: Dict[str, Any]) -> Dict[str, Any]:
         """Parse sensor-specific data based on sensor type."""
-        sensor_type = int(decrypted_data['sensor_type'], 16)
+        # Parse sensor_type as little-endian 16-bit integer from hex string
+        sensor_type_bytes = bytes.fromhex(decrypted_data['sensor_type'])
+        sensor_type = struct.unpack('<H', sensor_type_bytes)[0]  # Little-endian unsigned short
         payload = bytes.fromhex(decrypted_data['payload'])
+        
+        _LOGGER.info("🔍 SENSOR DATA PARSING:")
+        _LOGGER.info("  Sensor type hex: %s", decrypted_data['sensor_type'])
+        _LOGGER.info("  Sensor type bytes: %s", sensor_type_bytes.hex())
+        _LOGGER.info("  Sensor type decimal: %d", sensor_type)
+        _LOGGER.info("  Payload: %s", payload.hex())
         
         sensor_data = {
             'sensor_type': sensor_type,
