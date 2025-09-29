@@ -42,11 +42,12 @@ class WePowerEncryptedData:
         
         _LOGGER.info("🔍 ENCRYPTED DATA PARSING:")
         _LOGGER.info("  Raw data: %s", data.hex())
-        _LOGGER.info("  SRC ID: %s", self.src_id.hex())
-        _LOGGER.info("  NWK ID: %s", self.nwk_id.hex())
-        _LOGGER.info("  FW Version: %d", self.fw_version)
-        _LOGGER.info("  Sensor Type: %s", self.sensor_type.hex())
-        _LOGGER.info("  Payload: %s", self.payload.hex())
+        _LOGGER.info("  Raw data bytes: %s", [hex(b) for b in data])
+        _LOGGER.info("  SRC ID (bytes 0-2): %s", self.src_id.hex())
+        _LOGGER.info("  NWK ID (bytes 3-4): %s", self.nwk_id.hex())
+        _LOGGER.info("  FW Version (byte 5): %d (0x%02X)", self.fw_version, self.fw_version)
+        _LOGGER.info("  Sensor Type (bytes 6-7): %s", self.sensor_type.hex())
+        _LOGGER.info("  Payload (bytes 8-15): %s", self.payload.hex())
 
 class WePowerPacket:
     """Parser for WePower IoT BLE packets."""
@@ -132,6 +133,11 @@ class WePowerPacket:
             
             # Parse decrypted data
             decrypted_packet = WePowerEncryptedData(decrypted_data)
+            
+            _LOGGER.info("🔍 DECRYPTED DATA ANALYSIS:")
+            _LOGGER.info("  Decrypted data length: %d", len(decrypted_data))
+            _LOGGER.info("  Decrypted data hex: %s", decrypted_data.hex())
+            _LOGGER.info("  Decrypted data bytes: %s", [hex(b) for b in decrypted_data])
             
             return {
                 'src_id': decrypted_packet.src_id.hex().upper(),
