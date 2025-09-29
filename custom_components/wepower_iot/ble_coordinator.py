@@ -77,14 +77,20 @@ class WePowerIoTBluetoothProcessorCoordinator(
         """Handle a Bluetooth event."""
         super()._async_handle_bluetooth_event(service_info, change)
         try:
+            _LOGGER.info("🔵 BLE EVENT: %s | RSSI: %s | Name: %s | Change: %s", 
+                        self.address, service_info.rssi, service_info.name, change)
+            
             # Parse the advertisement data and update our data
             parsed_data = self._parse_advertisement_data(service_info)
             self.data = parsed_data
             self.last_update_success = True
+            
+            _LOGGER.info("🟢 BLE DATA PARSED: %s | Data: %s", self.address, parsed_data)
             self.async_update_listeners()
+            
         except Exception as e:
             self.last_update_success = False
-            _LOGGER.error("Error parsing BLE data for %s: %s", self.address, e)
+            _LOGGER.error("🔴 BLE PARSE ERROR: %s | Error: %s", self.address, e)
 
     def _parse_advertisement_data(self, service_info: BluetoothServiceInfo) -> dict[str, Any]:
         """Parse WePower IoT advertisement data using new packet format."""
@@ -101,11 +107,22 @@ class WePowerIoTBluetoothProcessorCoordinator(
         
         # Parse manufacturer data for WePower IoT devices using new packet format
         if service_info.manufacturer_data:
+            _LOGGER.info("📡 MANUFACTURER DATA: %s | IDs: %s", self.address, list(service_info.manufacturer_data.keys()))
             for manufacturer_id, manufacturer_data in service_info.manufacturer_data.items():
+                _LOGGER.info("🏭 MANUFACTURER: %s | ID: 0x%04X | Data: %s", 
+                            self.address, manufacturer_id, manufacturer_data.hex())
                 if manufacturer_id == BLE_COMPANY_ID:  # WePower manufacturer ID (0x5750)
+                    _LOGGER.info("✅ WEPOWER DEVICE DETECTED: %s | Parsing data...", self.address)
                     parsed_data = self._parse_wepower_manufacturer_data(manufacturer_data)
                     if parsed_data:
                         data.update(parsed_data)
+                        _LOGGER.info("🎯 WEPOWER DATA PARSED: %s | Result: %s", self.address, parsed_data)
+                    else:
+                        _LOGGER.warning("⚠️ WEPOWER PARSE FAILED: %s | Data: %s", self.address, manufacturer_data.hex())
+                else:
+                    _LOGGER.debug("❌ NON-WEPOWER: %s | ID: 0x%04X", self.address, manufacturer_id)
+        else:
+            _LOGGER.warning("⚠️ NO MANUFACTURER DATA: %s", self.address)
         
         # Determine device type based on sensor type
         if 'sensor_data' in data and 'sensor_type' in data['sensor_data']:
@@ -123,7 +140,10 @@ class WePowerIoTBluetoothProcessorCoordinator(
 
     def _parse_wepower_manufacturer_data(self, data: bytes) -> dict[str, Any]:
         """Parse WePower IoT manufacturer data using new packet format."""
+        _LOGGER.info("🔐 PARSING WEPOWER DATA: Length=%d | Data=%s", len(data), data.hex())
+        
         if len(data) < 20:  # New packet format is 20 bytes
+            _LOGGER.warning("⚠️ INVALID PACKET LENGTH: %d bytes (expected 20)", len(data))
             return {}
         
         # Get decryption key from config entry
@@ -131,14 +151,21 @@ class WePowerIoTBluetoothProcessorCoordinator(
         if hasattr(self._entry, 'data') and CONF_DECRYPTION_KEY in self._entry.data:
             try:
                 decryption_key = bytes.fromhex(self._entry.data[CONF_DECRYPTION_KEY])
+                _LOGGER.info("🔑 DECRYPTION KEY: %s", self._entry.data[CONF_DECRYPTION_KEY])
             except ValueError:
-                _LOGGER.warning("Invalid decryption key format")
+                _LOGGER.error("🔴 INVALID DECRYPTION KEY FORMAT: %s", self._entry.data[CONF_DECRYPTION_KEY])
+        else:
+            _LOGGER.warning("⚠️ NO DECRYPTION KEY FOUND in config entry")
         
         # Parse the packet using the new parser
+        _LOGGER.info("📦 CALLING PACKET PARSER: data=%s, key=%s", data.hex(), decryption_key.hex() if decryption_key else "None")
         parsed_packet = parse_wepower_packet(data, decryption_key)
         
         if not parsed_packet:
+            _LOGGER.error("🔴 PACKET PARSER RETURNED EMPTY RESULT")
             return {}
+        
+        _LOGGER.info("✅ PACKET PARSED SUCCESSFULLY: %s", parsed_packet)
         
         result = {
             "company_id": parsed_packet['company_id'],
@@ -149,20 +176,26 @@ class WePowerIoTBluetoothProcessorCoordinator(
         # Add decrypted data if available
         if 'decrypted_data' in parsed_packet:
             result['decrypted_data'] = parsed_packet['decrypted_data']
+            _LOGGER.info("🔓 DECRYPTED DATA: %s", parsed_packet['decrypted_data'])
         
         # Add sensor data if available
         if 'sensor_data' in parsed_packet:
             result['sensor_data'] = parsed_packet['sensor_data']
+            _LOGGER.info("📊 SENSOR DATA: %s", parsed_packet['sensor_data'])
             
             # Extract specific sensor values
             sensor_data = parsed_packet['sensor_data']
             if 'leak_detected' in sensor_data:
                 result['leak_detected'] = sensor_data['leak_detected']
+                _LOGGER.info("💧 LEAK DETECTED: %s", sensor_data['leak_detected'])
             if 'event_counter' in sensor_data:
                 result['event_counter'] = sensor_data['event_counter']
+                _LOGGER.info("🔢 EVENT COUNTER: %s", sensor_data['event_counter'])
             if 'sensor_event' in sensor_data:
                 result['sensor_event'] = sensor_data['sensor_event']
+                _LOGGER.info("📡 SENSOR EVENT: %s", sensor_data['sensor_event'])
         
+        _LOGGER.info("🎯 FINAL RESULT: %s", result)
         return result
 
     @callback
