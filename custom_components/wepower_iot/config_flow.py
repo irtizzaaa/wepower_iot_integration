@@ -42,7 +42,7 @@ class WePowerIoTConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
                     {
                         vol.Required("integration_type"): vol.In({
                             "mqtt": "MQTT-based (Traditional)",
-                            "ble": "Bluetooth Low Energy (BLE)"
+                            "ble": "Bluetooth Low Energy (BLE) - Manual Provisioning"
                         }),
                     }
                 ),
@@ -51,7 +51,7 @@ class WePowerIoTConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
         integration_type = user_input["integration_type"]
         
         if integration_type == "ble":
-            # Redirect to BLE config flow
+            # Redirect to BLE config flow for manual provisioning
             return await self.async_step_ble()
         else:
             # Continue with MQTT setup
@@ -124,24 +124,13 @@ class WePowerIoTConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
         )
 
     async def async_step_ble(self, user_input: dict[str, Any] | None = None) -> FlowResult:
-        """Handle BLE configuration step."""
-        return self.async_show_form(
-            step_id="ble_info",
-            data_schema=vol.Schema({}),
-            description_placeholders={
-                "message": "BLE devices are automatically discovered by Home Assistant's Bluetooth integration. No manual configuration needed!"
-            }
-        )
-    
-    async def async_step_ble_info(self, user_input: dict[str, Any] | None = None) -> FlowResult:
-        """Show BLE information and complete."""
-        return self.async_create_entry(
-            title="WePower IoT BLE (Auto-Discovery)",
-            data={
-                "integration_type": "ble",
-                "auto_discovery": True
-            }
-        )
+        """Handle BLE configuration step - redirect to BLE config flow."""
+        # Import here to avoid circular imports
+        from .ble_config_flow import WePowerIoTBluetoothConfigFlow
+        
+        # Create a BLE config flow instance and redirect to user step
+        ble_flow = WePowerIoTBluetoothConfigFlow()
+        return await ble_flow.async_step_user()
 
     async def async_step_import(self, import_info: dict[str, Any]) -> FlowResult:
         """Handle import from configuration.yaml."""
