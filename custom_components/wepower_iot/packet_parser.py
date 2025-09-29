@@ -10,7 +10,7 @@ _LOGGER = logging.getLogger(__name__)
 
 # Constants from the new packet format
 COMPANY_ID = 0x5750  # WePower company ID
-PACKET_LENGTH = 16  # Encrypted data size (HA BLE driver filters company ID)
+PACKET_LENGTH = 18  # Total packet length (HA BLE driver filters company ID)
 ENCRYPTED_DATA_SIZE = 16
 
 class WePowerPacketFlags:
@@ -43,28 +43,28 @@ class WePowerPacket:
     """Parser for WePower IoT BLE packets."""
     
     def __init__(self, raw_data: bytes):
-        """Initialize packet parser with encrypted data only (HA BLE driver filters company ID)."""
+        """Initialize packet parser with 18-byte packet (HA BLE driver filters company ID)."""
         if len(raw_data) < PACKET_LENGTH:
             raise ValueError(f"Packet data must be at least {PACKET_LENGTH} bytes")
         
         self.raw_data = raw_data
-        # Since HA BLE driver filters company ID, we only receive encrypted data
-        # The encrypted data structure:
-        # Encrypted data (16 bytes) - Contains src_id, nwk_id, fw_version, sensor_type, payload
+        # Packet structure after HA BLE driver filters company ID:
+        # Flags (1 byte) + Encrypted Data (16 bytes) + CRC (1 byte) = 18 bytes
         self.company_id = COMPANY_ID  # WePower company ID (filtered by HA)
-        self.flags = None  # Flags are handled separately in BLE coordinator
-        self.encrypted_data = WePowerEncryptedData(raw_data)  # 16 bytes of encrypted data
-        self.crc = None  # CRC is handled separately in BLE coordinator
+        self.flags = WePowerPacketFlags(raw_data[0])  # 1 byte flags
+        self.encrypted_data = WePowerEncryptedData(raw_data[1:17])  # 16 bytes encrypted data
+        self.crc = raw_data[16]  # 1 byte CRC
     
     def is_valid_company_id(self) -> bool:
         """Check if this is a WePower packet."""
         return self.company_id == COMPANY_ID
     
     def validate_crc(self) -> bool:
-        """Validate CRC checksum (handled separately in BLE coordinator)."""
-        # CRC validation is handled in the BLE coordinator
-        # since we only receive encrypted data here
-        return True
+        """Validate CRC checksum."""
+        # Calculate CRC for all data except the last byte (CRC field)
+        data_to_check = self.raw_data[:-1]
+        calculated_crc = self._calculate_crc8(data_to_check)
+        return calculated_crc == self.crc
     
     def _calculate_crc8(self, data: bytes) -> int:
         """Calculate CRC8 checksum using the same algorithm as the C code."""
@@ -83,11 +83,11 @@ class WePowerPacket:
         
         return crc
     
-    def decrypt_payload(self, decryption_key: bytes, flags: Optional[WePowerPacketFlags] = None) -> Optional[Dict[str, Any]]:
+    def decrypt_payload(self, decryption_key: bytes) -> Optional[Dict[str, Any]]:
         """Decrypt the encrypted data using AES-ECB."""
         try:
             # Check if decryption is needed based on encrypt_status flag
-            if flags and flags.encrypt_status == 1:
+            if self.flags.encrypt_status == 1:
                 # Data is not encrypted, return as-is
                 decrypted_data = self.encrypted_data.data_bytes
             else:
@@ -109,10 +109,10 @@ class WePowerPacket:
                 'fw_version': decrypted_packet.fw_version,
                 'sensor_type': decrypted_packet.sensor_type.hex().upper(),
                 'payload': decrypted_packet.payload.hex().upper(),
-                'event_counter_lsb': flags.event_counter_lsb if flags else 0,
-                'payload_length': flags.payload_length if flags else 0,
-                'encrypt_status': flags.encrypt_status if flags else 0,
-                'power_status': flags.self_external_power if flags else 0,
+                'event_counter_lsb': self.flags.event_counter_lsb,
+                'payload_length': self.flags.payload_length,
+                'encrypt_status': self.flags.encrypt_status,
+                'power_status': self.flags.self_external_power,
             }
         except Exception as e:
             _LOGGER.error(f"Decryption failed: {e}")
@@ -146,7 +146,7 @@ class WePowerPacket:
         
         return sensor_data
 
-def parse_wepower_packet(manufacturer_data: bytes, decryption_key: Optional[bytes] = None, flags: Optional[WePowerPacketFlags] = None) -> Optional[Dict[str, Any]]:
+def parse_wepower_packet(manufacturer_data: bytes, decryption_key: Optional[bytes] = None) -> Optional[Dict[str, Any]]:
     """Parse WePower packet from manufacturer data."""
     try:
         packet = WePowerPacket(manufacturer_data)
@@ -162,17 +162,17 @@ def parse_wepower_packet(manufacturer_data: bytes, decryption_key: Optional[byte
         result = {
             'company_id': packet.company_id,
             'flags': {
-                'encrypt_status': flags.encrypt_status if flags else 0,
-                'self_external_power': flags.self_external_power if flags else 0,
-                'event_counter_lsb': flags.event_counter_lsb if flags else 0,
-                'payload_length': flags.payload_length if flags else 0,
+                'encrypt_status': packet.flags.encrypt_status,
+                'self_external_power': packet.flags.self_external_power,
+                'event_counter_lsb': packet.flags.event_counter_lsb,
+                'payload_length': packet.flags.payload_length,
             },
             'crc': packet.crc,
         }
         
         # If decryption key is provided, decrypt the data
         if decryption_key:
-            decrypted_data = packet.decrypt_payload(decryption_key, flags)
+            decrypted_data = packet.decrypt_payload(decryption_key)
             if decrypted_data:
                 result['decrypted_data'] = decrypted_data
                 result['sensor_data'] = packet.parse_sensor_data(decrypted_data)
