@@ -156,8 +156,11 @@ class WePowerIoTBLESensor(SensorEntity):
 
     def _handle_coordinator_update(self) -> None:
         """Handle updated data from the coordinator."""
-        self._update_from_coordinator()
-        self.async_write_ha_state()
+        try:
+            self._update_from_coordinator()
+            self.async_write_ha_state()
+        except Exception as e:
+            _LOGGER.error("Error handling coordinator update for %s: %s", self.address, e)
 
     def _update_from_coordinator(self) -> None:
         """Update sensor state from coordinator data."""
