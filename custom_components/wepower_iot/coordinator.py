@@ -33,11 +33,9 @@ class WePowerIoTDataCoordinator(DataUpdateCoordinator):
         try:
             # Get current device data
             devices = self.device_manager.get_all_devices()
-            dongles = self.device_manager.get_dongles()
             
             return {
                 "devices": devices,
-                "dongles": dongles,
                 "last_update": self.device_manager.devices,
             }
         except Exception as err:
@@ -53,18 +51,17 @@ class WePowerIoTDataCoordinator(DataUpdateCoordinator):
     async def async_shutdown(self) -> None:
         """Shutdown the coordinator."""
         if hasattr(self, '_unsub_dispatcher') and self._unsub_dispatcher:
-            self._unsub_dispatcher()
+            try:
+                self._unsub_dispatcher()
+            except Exception as e:
+                _LOGGER.warning(f"Error removing dispatcher: {e}")
+            finally:
+                self._unsub_dispatcher = None
 
     def _handle_device_update(self, device_data: Dict[str, Any]) -> None:
         """Handle device update from dispatcher."""
         # Trigger a data update when devices change
         self.async_set_updated_data({
             "devices": self.device_manager.get_all_devices(),
-            "dongles": self.device_manager.get_dongles(),
             "last_update": self.device_manager.devices,
         })
-
-    async def async_shutdown(self) -> None:
-        """Shutdown the coordinator."""
-        if hasattr(self, '_unsub_dispatcher') and self._unsub_dispatcher:
-            self._unsub_dispatcher()
