@@ -147,7 +147,8 @@ class WePowerIoTBluetoothProcessorCoordinator(
             _LOGGER.warning("⚠️ INVALID PACKET LENGTH: %d bytes (expected 18)", len(data))
             return {}
         
-        # Parse packet structure: Company ID (2) + Flags (1) + Encrypted Data (16) + CRC (1) = 18 bytes
+        # Parse packet structure: HA BLE driver filters out Company ID (2 bytes)
+        # So we receive: Flags (1) + Encrypted Data (16) + CRC (1) = 18 bytes
         if len(data) < 18:
             _LOGGER.error("🔴 PACKET TOO SHORT: %d bytes (need 18)", len(data))
             return {}
@@ -155,12 +156,13 @@ class WePowerIoTBluetoothProcessorCoordinator(
         _LOGGER.info("🔍 PACKET DEBUG: Length=%d, Data=%s", len(data), data.hex())
         
         try:
-            company_id = struct.unpack('<H', data[0:2])[0]  # 2 bytes, little-endian
-            flags = data[2]  # 1 byte
-            encrypted_data = data[3:18]  # 15 bytes (positions 3-17)
-            crc = data[17]  # 1 byte (position 17, last byte)
+            # Company ID is already filtered by HA BLE driver (0x5750)
+            company_id = 0x5750  # WePower company ID (filtered by HA)
+            flags = data[0]  # 1 byte
+            encrypted_data = data[1:17]  # 16 bytes (positions 1-16)
+            crc = data[16]  # 1 byte (position 16, last byte)
             
-            _LOGGER.info("📦 PACKET STRUCTURE: Company ID=0x%04X, Flags=0x%02X, CRC=0x%02X", 
+            _LOGGER.info("📦 PACKET STRUCTURE: Company ID=0x%04X (filtered by HA), Flags=0x%02X, CRC=0x%02X", 
                         company_id, flags, crc)
             _LOGGER.info("🔐 ENCRYPTED DATA (%d bytes): %s", len(encrypted_data), encrypted_data.hex())
             
