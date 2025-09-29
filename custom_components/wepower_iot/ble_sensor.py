@@ -105,7 +105,7 @@ class WePowerIoTBLESensor(SensorEntity):
     @property
     def available(self) -> bool:
         """Return if entity is available."""
-        return self.coordinator.last_update_success and self._attr_available
+        return self.coordinator.available and self._attr_available
 
     @property
     def extra_state_attributes(self) -> Dict[str, Any]:
@@ -132,6 +132,7 @@ class WePowerIoTBLESensor(SensorEntity):
                 "ble_active": True,  # If we have data, BLE is active
                 "ble_connected": self.coordinator.available,  # Use coordinator availability
                 "ble_status": "active" if self.coordinator.available else "inactive",
+                "last_update_success": getattr(self.coordinator, 'last_update_success', True),
             })
             
             # Add sensor-specific attributes
@@ -182,8 +183,8 @@ class WePowerIoTBLESensor(SensorEntity):
         
         # Update availability
         self._attr_available = True
-        _LOGGER.debug("BLE sensor %s: Updated with data, available=%s, value=%s, BLE_active=%s", 
-                     self.address, self._attr_available, self._attr_native_value, self.coordinator.available)
+        _LOGGER.debug("BLE sensor %s: Updated with data, available=%s, value=%s, BLE_active=%s, coordinator_available=%s", 
+                     self.address, self._attr_available, self._attr_native_value, True, self.coordinator.available)
         
     def _set_sensor_properties(self) -> None:
         """Set sensor properties based on device type."""
