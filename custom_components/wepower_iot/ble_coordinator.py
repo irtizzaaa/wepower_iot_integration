@@ -160,7 +160,7 @@ class WePowerIoTBluetoothProcessorCoordinator(
             company_id = 0x5750  # WePower company ID (filtered by HA)
             flags = data[0]  # 1 byte
             encrypted_data = data[1:17]  # 16 bytes (positions 1-16)
-            crc = data[16]  # 1 byte (position 16, last byte)
+            crc = data[17]  # 1 byte (position 17, last byte)
             
             _LOGGER.info("📦 PACKET STRUCTURE: Company ID=0x%04X (filtered by HA), Flags=0x%02X, CRC=0x%02X", 
                         company_id, flags, crc)
