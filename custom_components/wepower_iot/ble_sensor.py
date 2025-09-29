@@ -40,8 +40,8 @@ async def async_setup_entry(
         _LOGGER.error("No address found in config entry")
         return
 
-    # Get the BLE coordinator
-    coordinator = hass.data[DOMAIN][config_entry.entry_id]["coordinator"]
+    # Get the BLE coordinator from runtime_data
+    coordinator = config_entry.runtime_data
     
     # Create sensor entities based on device type
     entities = []
