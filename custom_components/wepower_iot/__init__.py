@@ -109,39 +109,6 @@ async def _register_services(hass: HomeAssistant, device_manager: WePowerIoTDevi
             del device_manager.devices[device_id]
             hass.bus.async_fire(f"{DOMAIN}_device_removed", {"device_id": device_id})
     
-    async def toggle_ble(service_call):
-        """Toggle BLE functionality."""
-        enabled = service_call.data.get("enabled", True)
-        # Send MQTT command to toggle BLE
-        await device_manager.publish_mqtt(
-            "wepower_iot/control/ble/toggle",
-            json.dumps({"action": "toggle_ble", "enabled": enabled})
-        )
-        _LOGGER.info(f"Sent BLE toggle command: enabled={enabled}")
-        hass.bus.async_fire(f"{DOMAIN}_ble_toggled", {"enabled": enabled})
-    
-    async def toggle_zigbee(service_call):
-        """Toggle Zigbee functionality."""
-        enabled = service_call.data.get("enabled", True)
-        # Send MQTT command to toggle Zigbee
-        await device_manager.publish_mqtt(
-            "wepower_iot/control/zigbee/toggle",
-            json.dumps({"action": "toggle_zigbee", "enabled": enabled})
-        )
-        _LOGGER.info(f"Sent Zigbee toggle command: enabled={enabled}")
-        hass.bus.async_fire(f"{DOMAIN}_zigbee_toggled", {"enabled": enabled})
-    
-    async def scan_devices(service_call):
-        """Scan for devices."""
-        dongle_id = service_call.data.get("dongle_id", "all")
-        # Send MQTT command to scan for devices
-        await device_manager.publish_mqtt(
-            "wepower_iot/command/scan",
-            json.dumps({"dongle_id": dongle_id})
-        )
-        _LOGGER.info(f"Sent scan command for dongle: {dongle_id}")
-        hass.bus.async_fire(f"{DOMAIN}_scan_triggered", {"dongle_id": dongle_id})
-    
     async def create_entities_for_devices(service_call):
         """Create entities for all devices in device manager."""
         # Get all devices and create entities for them
@@ -151,12 +118,9 @@ async def _register_services(hass: HomeAssistant, device_manager: WePowerIoTDevi
         # Trigger platform reload to create entities for new devices
         await hass.config_entries.async_reload(config_entry.entry_id)
     
-    # Register services
+    # Register services (removed MQTT dongle services)
     hass.services.async_register(DOMAIN, "add_device", add_device)
     hass.services.async_register(DOMAIN, "remove_device", remove_device)
-    hass.services.async_register(DOMAIN, "toggle_ble", toggle_ble)
-    hass.services.async_register(DOMAIN, "toggle_zigbee", toggle_zigbee)
-    hass.services.async_register(DOMAIN, "scan_devices", scan_devices)
     hass.services.async_register(DOMAIN, "create_entities", create_entities_for_devices)
 
 
