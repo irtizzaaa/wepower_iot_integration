@@ -52,6 +52,7 @@ class WePowerIoTBluetoothProcessorCoordinator(
             connectable=False,
         )
         self.data = {}
+        self.last_update_success = True
 
     async def async_init(self) -> None:
         """Initialize the coordinator."""
@@ -75,10 +76,15 @@ class WePowerIoTBluetoothProcessorCoordinator(
     ) -> None:
         """Handle a Bluetooth event."""
         super()._async_handle_bluetooth_event(service_info, change)
-        # Parse the advertisement data and update our data
-        parsed_data = self._parse_advertisement_data(service_info)
-        self.data = parsed_data
-        self.async_update_listeners()
+        try:
+            # Parse the advertisement data and update our data
+            parsed_data = self._parse_advertisement_data(service_info)
+            self.data = parsed_data
+            self.last_update_success = True
+            self.async_update_listeners()
+        except Exception as e:
+            self.last_update_success = False
+            _LOGGER.error("Error parsing BLE data for %s: %s", self.address, e)
 
     def _parse_advertisement_data(self, service_info: BluetoothServiceInfo) -> dict[str, Any]:
         """Parse WePower IoT advertisement data using new packet format."""
@@ -164,5 +170,9 @@ class WePowerIoTBluetoothProcessorCoordinator(
         """Schedule a poll of the device."""
         # Simple polling - just trigger an update if we have data
         if self.data:
+            self.last_update_success = True
             self.async_update_listeners()
+        else:
+            # No data for a while, mark as potentially unavailable
+            self.last_update_success = False
 
