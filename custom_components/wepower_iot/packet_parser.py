@@ -83,11 +83,11 @@ class WePowerPacket:
         
         return crc
     
-    def decrypt_payload(self, decryption_key: bytes) -> Optional[Dict[str, Any]]:
+    def decrypt_payload(self, decryption_key: bytes, flags: Optional[WePowerPacketFlags] = None) -> Optional[Dict[str, Any]]:
         """Decrypt the encrypted data using AES-ECB."""
         try:
             # Check if decryption is needed based on encrypt_status flag
-            if self.flags.encrypt_status == 1:
+            if flags and flags.encrypt_status == 1:
                 # Data is not encrypted, return as-is
                 decrypted_data = self.encrypted_data.data_bytes
             else:
@@ -109,10 +109,10 @@ class WePowerPacket:
                 'fw_version': decrypted_packet.fw_version,
                 'sensor_type': decrypted_packet.sensor_type.hex().upper(),
                 'payload': decrypted_packet.payload.hex().upper(),
-                'event_counter_lsb': self.flags.event_counter_lsb,
-                'payload_length': self.flags.payload_length,
-                'encrypt_status': self.flags.encrypt_status,
-                'power_status': self.flags.self_external_power,
+                'event_counter_lsb': flags.event_counter_lsb if flags else 0,
+                'payload_length': flags.payload_length if flags else 0,
+                'encrypt_status': flags.encrypt_status if flags else 0,
+                'power_status': flags.self_external_power if flags else 0,
             }
         except Exception as e:
             _LOGGER.error(f"Decryption failed: {e}")
@@ -146,7 +146,7 @@ class WePowerPacket:
         
         return sensor_data
 
-def parse_wepower_packet(manufacturer_data: bytes, decryption_key: Optional[bytes] = None) -> Optional[Dict[str, Any]]:
+def parse_wepower_packet(manufacturer_data: bytes, decryption_key: Optional[bytes] = None, flags: Optional[WePowerPacketFlags] = None) -> Optional[Dict[str, Any]]:
     """Parse WePower packet from manufacturer data."""
     try:
         packet = WePowerPacket(manufacturer_data)
@@ -162,17 +162,17 @@ def parse_wepower_packet(manufacturer_data: bytes, decryption_key: Optional[byte
         result = {
             'company_id': packet.company_id,
             'flags': {
-                'encrypt_status': packet.flags.encrypt_status,
-                'self_external_power': packet.flags.self_external_power,
-                'event_counter_lsb': packet.flags.event_counter_lsb,
-                'payload_length': packet.flags.payload_length,
+                'encrypt_status': flags.encrypt_status if flags else 0,
+                'self_external_power': flags.self_external_power if flags else 0,
+                'event_counter_lsb': flags.event_counter_lsb if flags else 0,
+                'payload_length': flags.payload_length if flags else 0,
             },
             'crc': packet.crc,
         }
         
         # If decryption key is provided, decrypt the data
         if decryption_key:
-            decrypted_data = packet.decrypt_payload(decryption_key)
+            decrypted_data = packet.decrypt_payload(decryption_key, flags)
             if decrypted_data:
                 result['decrypted_data'] = decrypted_data
                 result['sensor_data'] = packet.parse_sensor_data(decrypted_data)
