@@ -137,8 +137,8 @@ class WePowerPacket:
                 'src_id': decrypted_packet.src_id.hex().upper(),
                 'nwk_id': decrypted_packet.nwk_id.hex().upper(),
                 'fw_version': decrypted_packet.fw_version,
-                'sensor_type': decrypted_packet.sensor_type.hex().upper(),
-                'payload': decrypted_packet.payload.hex().upper(),
+                'sensor_type': decrypted_packet.sensor_type,  # Keep as bytes
+                'payload': decrypted_packet.payload,  # Keep as bytes
                 'event_counter_lsb': self.flags.event_counter_lsb,
                 'payload_length': self.flags.payload_length,
                 'encrypt_status': self.flags.encrypt_status,
@@ -150,13 +150,12 @@ class WePowerPacket:
     
     def parse_sensor_data(self, decrypted_data: Dict[str, Any]) -> Dict[str, Any]:
         """Parse sensor-specific data based on sensor type."""
-        # Parse sensor_type as little-endian 16-bit integer from hex string
-        sensor_type_bytes = bytes.fromhex(decrypted_data['sensor_type'])
+        # Parse sensor_type as little-endian 16-bit integer from bytes
+        sensor_type_bytes = decrypted_data['sensor_type']  # Already bytes
         sensor_type = struct.unpack('<H', sensor_type_bytes)[0]  # Little-endian unsigned short
-        payload = bytes.fromhex(decrypted_data['payload'])
+        payload = decrypted_data['payload']  # Already bytes
         
         _LOGGER.info("🔍 SENSOR DATA PARSING:")
-        _LOGGER.info("  Sensor type hex: %s", decrypted_data['sensor_type'])
         _LOGGER.info("  Sensor type bytes: %s", sensor_type_bytes.hex())
         _LOGGER.info("  Sensor type decimal: %d", sensor_type)
         _LOGGER.info("  Payload: %s", payload.hex())
