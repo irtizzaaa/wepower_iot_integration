@@ -35,6 +35,7 @@ async def async_setup_entry(
     async_add_entities: AddEntitiesCallback,
 ) -> None:
     """Set up WePower IoT BLE sensors from a config entry."""
+    _LOGGER.info("Setting up BLE sensor for entry %s", config_entry.entry_id)
     address = config_entry.unique_id
     if not address:
         _LOGGER.error("No address found in config entry")
@@ -42,6 +43,16 @@ async def async_setup_entry(
 
     # Get the BLE coordinator from runtime_data
     coordinator = config_entry.runtime_data
+    if not coordinator:
+        # Fallback: try to get from hass.data
+        _LOGGER.warning("No coordinator in runtime_data, trying hass.data for entry %s", config_entry.entry_id)
+        try:
+            coordinator = hass.data[DOMAIN][config_entry.entry_id]["coordinator"]
+        except KeyError:
+            _LOGGER.error("No coordinator found in runtime_data or hass.data for entry %s", config_entry.entry_id)
+            return
+    
+    _LOGGER.info("BLE coordinator found for entry %s, creating sensor entities", config_entry.entry_id)
     
     # Create sensor entities based on device type
     entities = []
