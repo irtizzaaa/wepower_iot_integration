@@ -181,10 +181,11 @@ class WePowerIoTBluetoothProcessorCoordinator(
         else:
             _LOGGER.warning("⚠️ NO DECRYPTION KEY FOUND in config entry")
         
-        # Parse only the 16-byte encrypted data using the parser
-        _LOGGER.info("📦 CALLING PACKET PARSER: encrypted_data=%s, key=%s", 
-                    encrypted_data.hex(), decryption_key.hex() if decryption_key else "None")
-        parsed_packet = parse_wepower_packet(encrypted_data, decryption_key)
+        # Parse the full 18-byte packet using the parser
+        _LOGGER.info("📦 CALLING PACKET PARSER: packet_data=%s, key=%s", 
+                    data.hex(), decryption_key.hex() if decryption_key else "None")
+        
+        parsed_packet = parse_wepower_packet(data, decryption_key)
         
         if not parsed_packet:
             _LOGGER.error("🔴 PACKET PARSER RETURNED EMPTY RESULT")
