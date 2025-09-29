@@ -5,6 +5,7 @@ from __future__ import annotations
 import logging
 from datetime import datetime, timedelta
 from typing import Any
+import struct
 
 from homeassistant.components.bluetooth import (
     BluetoothScanningMode,
@@ -146,6 +147,16 @@ class WePowerIoTBluetoothProcessorCoordinator(
             _LOGGER.warning("⚠️ INVALID PACKET LENGTH: %d bytes (expected 18)", len(data))
             return {}
         
+        # Parse packet structure: Company ID (2) + Flags (1) + Encrypted Data (16) + CRC (1) = 18 bytes
+        company_id = struct.unpack('<H', data[0:2])[0]  # 2 bytes, little-endian
+        flags = data[2]  # 1 byte
+        encrypted_data = data[3:19]  # 16 bytes (positions 3-18)
+        crc = data[18]  # 1 byte (position 18)
+        
+        _LOGGER.info("📦 PACKET STRUCTURE: Company ID=0x%04X, Flags=0x%02X, CRC=0x%02X", 
+                    company_id, flags, crc)
+        _LOGGER.info("🔐 ENCRYPTED DATA (16 bytes): %s", encrypted_data.hex())
+        
         # Get decryption key from config entry
         decryption_key = None
         if hasattr(self._entry, 'data') and CONF_DECRYPTION_KEY in self._entry.data:
@@ -157,9 +168,10 @@ class WePowerIoTBluetoothProcessorCoordinator(
         else:
             _LOGGER.warning("⚠️ NO DECRYPTION KEY FOUND in config entry")
         
-        # Parse the packet using the new parser
-        _LOGGER.info("📦 CALLING PACKET PARSER: data=%s, key=%s", data.hex(), decryption_key.hex() if decryption_key else "None")
-        parsed_packet = parse_wepower_packet(data, decryption_key)
+        # Parse only the 16-byte encrypted data using the parser
+        _LOGGER.info("📦 CALLING PACKET PARSER: encrypted_data=%s, key=%s", 
+                    encrypted_data.hex(), decryption_key.hex() if decryption_key else "None")
+        parsed_packet = parse_wepower_packet(encrypted_data, decryption_key)
         
         if not parsed_packet:
             _LOGGER.error("🔴 PACKET PARSER RETURNED EMPTY RESULT")
@@ -168,9 +180,15 @@ class WePowerIoTBluetoothProcessorCoordinator(
         _LOGGER.info("✅ PACKET PARSED SUCCESSFULLY: %s", parsed_packet)
         
         result = {
-            "company_id": parsed_packet['company_id'],
-            "flags": parsed_packet['flags'],
-            "crc": parsed_packet['crc'],
+            "company_id": company_id,
+            "flags": flags,
+            "crc": crc,
+            "packet_structure": {
+                "company_id": company_id,
+                "flags": flags,
+                "encrypted_data_length": len(encrypted_data),
+                "crc": crc,
+            }
         }
         
         # Add decrypted data if available
