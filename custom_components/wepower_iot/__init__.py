@@ -34,6 +34,7 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     # Check if this is a BLE device entry
     if entry.data.get("address"):
         # This is a BLE device entry
+        _LOGGER.info("Setting up BLE device entry %s with address %s", entry.entry_id, entry.data.get("address"))
         coordinator = WePowerIoTBluetoothProcessorCoordinator(hass, entry)
         await coordinator.async_init()
         entry.runtime_data = coordinator
@@ -43,6 +44,7 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
             "coordinator": coordinator,
             "config": entry.data
         }
+        _LOGGER.info("BLE coordinator stored for entry %s", entry.entry_id)
         
         # Forward the setup to BLE platforms
         await hass.config_entries.async_forward_entry_setups(entry, BLE_PLATFORMS)
