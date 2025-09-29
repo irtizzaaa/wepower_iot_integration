@@ -141,7 +141,7 @@ class WePowerPacket:
             _LOGGER.info("  Decrypted data bytes: %s", [hex(b) for b in decrypted_data])
             
             return {
-                'src_id': decrypted_packet.src_id.hex().upper(),
+                'src_id': struct.unpack('<I', decrypted_packet.src_id + b'\x00')[0],  # Convert 3 bytes to 32-bit int
                 'nwk_id': struct.unpack('<H', decrypted_packet.nwk_id)[0],  # Convert to integer
                 'fw_version': decrypted_packet.fw_version,
                 'sensor_type': decrypted_packet.sensor_type,  # Keep as bytes
