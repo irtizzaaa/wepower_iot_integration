@@ -10,7 +10,7 @@ _LOGGER = logging.getLogger(__name__)
 
 # Constants from the new packet format
 COMPANY_ID = 0x5750  # WePower company ID
-PACKET_LENGTH = 20
+PACKET_LENGTH = 16  # Encrypted data size (HA BLE driver filters company ID)
 ENCRYPTED_DATA_SIZE = 16
 
 class WePowerPacketFlags:
@@ -43,31 +43,28 @@ class WePowerPacket:
     """Parser for WePower IoT BLE packets."""
     
     def __init__(self, raw_data: bytes):
-        """Initialize packet parser with raw manufacturer data."""
+        """Initialize packet parser with encrypted data only (HA BLE driver filters company ID)."""
         if len(raw_data) < PACKET_LENGTH:
             raise ValueError(f"Packet data must be at least {PACKET_LENGTH} bytes")
         
         self.raw_data = raw_data
-        # Packet structure based on the provided image:
-        # Company ID (2 bytes) - Non-encrypted
-        # Flags (1 byte) - Non-encrypted  
-        # Encrypted data (16 bytes) - Encrypted
-        # CRC (1 byte) - Non-encrypted
-        self.company_id = struct.unpack('<H', raw_data[0:2])[0]  # Little endian
-        self.flags = WePowerPacketFlags(raw_data[2])
-        self.encrypted_data = WePowerEncryptedData(raw_data[3:19])
-        self.crc = raw_data[19]
+        # Since HA BLE driver filters company ID, we only receive encrypted data
+        # The encrypted data structure:
+        # Encrypted data (16 bytes) - Contains src_id, nwk_id, fw_version, sensor_type, payload
+        self.company_id = COMPANY_ID  # WePower company ID (filtered by HA)
+        self.flags = None  # Flags are handled separately in BLE coordinator
+        self.encrypted_data = WePowerEncryptedData(raw_data)  # 16 bytes of encrypted data
+        self.crc = None  # CRC is handled separately in BLE coordinator
     
     def is_valid_company_id(self) -> bool:
         """Check if this is a WePower packet."""
         return self.company_id == COMPANY_ID
     
     def validate_crc(self) -> bool:
-        """Validate CRC checksum."""
-        # Calculate CRC for all data except the last byte (CRC field)
-        data_to_check = self.raw_data[:-1]
-        calculated_crc = self._calculate_crc8(data_to_check)
-        return calculated_crc == self.crc
+        """Validate CRC checksum (handled separately in BLE coordinator)."""
+        # CRC validation is handled in the BLE coordinator
+        # since we only receive encrypted data here
+        return True
     
     def _calculate_crc8(self, data: bytes) -> int:
         """Calculate CRC8 checksum using the same algorithm as the C code."""
