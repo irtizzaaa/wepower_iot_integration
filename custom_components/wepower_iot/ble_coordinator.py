@@ -234,6 +234,25 @@ class WePowerIoTBluetoothProcessorCoordinator(
                 result['sensor_event'] = sensor_data['sensor_event']
                 _LOGGER.info("📡 SENSOR EVENT: %s", sensor_data['sensor_event'])
         
+        # Determine device type based on sensor type
+        if 'sensor_data' in parsed_packet and 'sensor_type' in parsed_packet['sensor_data']:
+            sensor_type = parsed_packet['sensor_data']['sensor_type']
+            if sensor_type == 4:
+                result['device_type'] = "leak_sensor"
+                _LOGGER.info("🏷️ DEVICE TYPE: leak_sensor")
+            elif sensor_type == 1:
+                result['device_type'] = "temperature_sensor"
+                _LOGGER.info("🏷️ DEVICE TYPE: temperature_sensor")
+            elif sensor_type == 2:
+                result['device_type'] = "humidity_sensor"
+                _LOGGER.info("🏷️ DEVICE TYPE: humidity_sensor")
+            elif sensor_type == 3:
+                result['device_type'] = "pressure_sensor"
+                _LOGGER.info("🏷️ DEVICE TYPE: pressure_sensor")
+            else:
+                result['device_type'] = "unknown"
+                _LOGGER.warning("⚠️ UNKNOWN SENSOR TYPE: %d", sensor_type)
+        
         _LOGGER.info("🎯 FINAL RESULT: %s", result)
         return result
 
