@@ -118,11 +118,12 @@ class WePowerPacket:
         """Decrypt the encrypted data using AES-ECB."""
         try:
             # Check if decryption is needed based on encrypt_status flag
-            if self.flags.encrypt_status == 0:
+            # 0 = encrypted, 1 = not encrypted (clear text)
+            if self.flags.encrypt_status == 1:
                 # Data is not encrypted, return as-is
                 decrypted_data = self.encrypted_data.data_bytes
             else:
-                # Data is encrypted, decrypt it
+                # Data is encrypted (encrypt_status == 0), decrypt it
                 cipher = Cipher(
                     algorithms.AES(decryption_key),
                     modes.ECB(),
