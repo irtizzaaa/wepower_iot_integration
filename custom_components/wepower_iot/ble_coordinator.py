@@ -139,11 +139,11 @@ class WePowerIoTBluetoothProcessorCoordinator(
         return data
 
     def _parse_wepower_manufacturer_data(self, data: bytes) -> dict[str, Any]:
-        """Parse WePower IoT manufacturer data using new packet format."""
+        """Parse WePower IoT manufacturer data using 18-byte packet format."""
         _LOGGER.info("🔐 PARSING WEPOWER DATA: Length=%d | Data=%s", len(data), data.hex())
         
-        if len(data) < 20:  # New packet format is 20 bytes
-            _LOGGER.warning("⚠️ INVALID PACKET LENGTH: %d bytes (expected 20)", len(data))
+        if len(data) < 18:  # WePower packet format is 18 bytes
+            _LOGGER.warning("⚠️ INVALID PACKET LENGTH: %d bytes (expected 18)", len(data))
             return {}
         
         # Get decryption key from config entry
