@@ -26,11 +26,11 @@ STEP_USER_DATA_SCHEMA = vol.Schema(
         vol.Required(CONF_ADDRESS): str,
         vol.Required(CONF_DECRYPTION_KEY): str,
         vol.Optional(CONF_DEVICE_NAME): str,
-        vol.Optional(CONF_SENSOR_TYPE, default=4): vol.Select({
-            1: "Temperature Sensor",
-            2: "Humidity Sensor", 
-            3: "Pressure Sensor",
-            4: "Leak Sensor (Default)"
+        vol.Optional(CONF_SENSOR_TYPE, default=4): vol.In({
+            "1": "Temperature Sensor",
+            "2": "Humidity Sensor", 
+            "3": "Pressure Sensor",
+            "4": "Leak Sensor (Default)"
         }),
     }
 )
@@ -39,11 +39,11 @@ STEP_DISCOVERY_DATA_SCHEMA = vol.Schema(
     {
         vol.Required(CONF_DECRYPTION_KEY): str,
         vol.Optional(CONF_DEVICE_NAME): str,
-        vol.Optional(CONF_SENSOR_TYPE, default=4): vol.Select({
-            1: "Temperature Sensor",
-            2: "Humidity Sensor", 
-            3: "Pressure Sensor",
-            4: "Leak Sensor (Default)"
+        vol.Optional(CONF_SENSOR_TYPE, default=4): vol.In({
+            "1": "Temperature Sensor",
+            "2": "Humidity Sensor", 
+            "3": "Pressure Sensor",
+            "4": "Leak Sensor (Default)"
         }),
     }
 )
@@ -67,7 +67,7 @@ class WePowerIoTBluetoothConfigFlow(ConfigFlow, domain=DOMAIN):
             name = user_input[CONF_NAME]
             decryption_key = user_input[CONF_DECRYPTION_KEY]
             device_name = user_input.get(CONF_DEVICE_NAME, name)
-            sensor_type = user_input.get(CONF_SENSOR_TYPE, 4)  # Default to leak sensor
+            sensor_type = int(user_input.get(CONF_SENSOR_TYPE, "4"))  # Convert string to int, default to leak sensor
             
             # Validate decryption key format
             try:
