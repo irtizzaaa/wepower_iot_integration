@@ -117,6 +117,9 @@ class WePowerIoTBLESensor(SensorEntity):
             "signal_strength": None,
             "battery_level": None,
             "last_seen": None,
+            "ble_active": False,
+            "ble_connected": False,
+            "ble_status": "inactive",
         }
         
         # Add data from coordinator if available
@@ -126,6 +129,9 @@ class WePowerIoTBLESensor(SensorEntity):
                 "signal_strength": self.coordinator.data.get("signal_strength"),
                 "battery_level": self.coordinator.data.get("battery_level"),
                 "last_seen": self.coordinator.data.get("timestamp"),
+                "ble_active": True,  # If we have data, BLE is active
+                "ble_connected": self.coordinator.available,  # Use coordinator availability
+                "ble_status": "active" if self.coordinator.available else "inactive",
             })
             
             # Add sensor-specific attributes
@@ -143,9 +149,10 @@ class WePowerIoTBLESensor(SensorEntity):
     async def async_added_to_hass(self) -> None:
         """Call when entity is added to hass."""
         await super().async_added_to_hass()
-        self.async_on_remove(
-            self.coordinator.async_add_listener(self._handle_coordinator_update)
-        )
+        # Register with coordinator to receive updates
+        self._unsub_coordinator = self.coordinator.async_add_listener(self._handle_coordinator_update)
+        # Set up cleanup when entity is removed
+        self.async_on_remove(self._unsub_coordinator)
 
     def _handle_coordinator_update(self) -> None:
         """Handle updated data from the coordinator."""
@@ -156,6 +163,7 @@ class WePowerIoTBLESensor(SensorEntity):
         """Update sensor state from coordinator data."""
         if not self.coordinator.data:
             self._attr_available = False
+            _LOGGER.debug("BLE sensor %s: No coordinator data", self.address)
             return
             
         data = self.coordinator.data
@@ -171,6 +179,8 @@ class WePowerIoTBLESensor(SensorEntity):
         
         # Update availability
         self._attr_available = True
+        _LOGGER.debug("BLE sensor %s: Updated with data, available=%s, value=%s, BLE_active=%s", 
+                     self.address, self._attr_available, self._attr_native_value, self.coordinator.available)
         
     def _set_sensor_properties(self) -> None:
         """Set sensor properties based on device type."""
