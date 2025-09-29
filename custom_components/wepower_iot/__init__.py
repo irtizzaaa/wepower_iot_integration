@@ -38,6 +38,12 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
         await coordinator.async_init()
         entry.runtime_data = coordinator
         
+        # Store coordinator in hass.data for consistency with unload process
+        hass.data[DOMAIN][entry.entry_id] = {
+            "coordinator": coordinator,
+            "config": entry.data
+        }
+        
         # Forward the setup to BLE platforms
         await hass.config_entries.async_forward_entry_setups(entry, BLE_PLATFORMS)
         
@@ -88,7 +94,10 @@ async def async_unload_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
             if device_manager:
                 await device_manager.stop()
             if coordinator:
-                await coordinator.async_shutdown()
+                # Check if it's a traditional coordinator with shutdown method
+                if hasattr(coordinator, 'async_shutdown'):
+                    await coordinator.async_shutdown()
+                # BLE coordinators are cleaned up automatically by Home Assistant
         hass.data[DOMAIN].pop(entry.entry_id)
 
     return unload_ok
@@ -115,8 +124,8 @@ async def _register_services(hass: HomeAssistant, device_manager: WePowerIoTDevi
         all_devices = device_manager.get_all_devices()
         _LOGGER.info(f"Found {len(all_devices)} devices to create entities for")
         
-        # Trigger platform reload to create entities for new devices
-        await hass.config_entries.async_reload(config_entry.entry_id)
+        # Note: Entities are created automatically when devices are added
+        # This service is kept for compatibility but doesn't need to reload config entries
     
     # Register services (removed MQTT dongle services)
     hass.services.async_register(DOMAIN, "add_device", add_device)
