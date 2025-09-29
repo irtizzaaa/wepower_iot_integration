@@ -64,11 +64,27 @@ class WePowerPacket:
     
     def validate_crc(self) -> bool:
         """Validate CRC checksum."""
-        # Calculate CRC for all data except the last byte (CRC field)
-        data_to_check = self.raw_data[:-1]
+        # Reconstruct the full packet for CRC calculation
+        # Original packet: Company ID (2) + Flags (1) + Encrypted Data (16) + CRC (1) = 20 bytes
+        # We have: Flags (1) + Encrypted Data (16) + CRC (1) = 18 bytes
+        # Need to add Company ID back for CRC calculation
+        
+        company_id_bytes = struct.pack('<H', COMPANY_ID)  # 0x5750 as little-endian bytes
+        full_packet = company_id_bytes + self.raw_data  # Add company ID back
+        
+        # Calculate CRC over all data except the last byte (CRC field)
+        data_to_check = full_packet[:-1]
         calculated_crc = self._calculate_crc8(data_to_check)
-        _LOGGER.info("🔍 CRC VALIDATION: Data=%s, Calculated=0x%02X, Expected=0x%02X, Match=%s", 
-                    data_to_check.hex(), calculated_crc, self.crc, calculated_crc == self.crc)
+        
+        _LOGGER.info("🔍 CRC VALIDATION:")
+        _LOGGER.info("  Company ID bytes: %s", company_id_bytes.hex())
+        _LOGGER.info("  Raw data: %s", self.raw_data.hex())
+        _LOGGER.info("  Full packet: %s", full_packet.hex())
+        _LOGGER.info("  Data to check: %s", data_to_check.hex())
+        _LOGGER.info("  Calculated CRC: 0x%02X", calculated_crc)
+        _LOGGER.info("  Expected CRC: 0x%02X", self.crc)
+        _LOGGER.info("  Match: %s", calculated_crc == self.crc)
+        
         return calculated_crc == self.crc
     
     def _calculate_crc8(self, data: bytes) -> int:
