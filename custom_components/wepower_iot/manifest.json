@@ -1,6 +1,7 @@
 {
   "domain": "wepower_iot",
   "name": "WePower IoT",
+  "integration_type": "hub",
   "bluetooth": [
     {
       "local_name": "WePower",
@@ -31,5 +32,5 @@
   "iot_class": "local_push",
   "loggers": ["wepower_iot_ble"],
   "requirements": ["cryptography>=3.0.0"],
-  "version": "1.0.51"
+  "version": "1.0.52"
 }
