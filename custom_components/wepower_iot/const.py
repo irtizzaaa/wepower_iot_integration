@@ -51,7 +51,7 @@ BLE_DISCOVERY_MODE_V1_AUTO: Final = "v1_auto"
 
 # Integration name and version
 INTEGRATION_NAME: Final = "WePower IoT"
-INTEGRATION_VERSION: Final = "1.0.52"
+INTEGRATION_VERSION: Final = "1.0.53"
 
 # BLE Packet Format Constants
 BLE_COMPANY_ID: Final = 0x5750  # WePower company ID
@@ -79,4 +79,5 @@ SWITCH_TYPE_TOGGLE: Final = 9
 # Signals
 SIGNAL_DEVICE_UPDATED: Final = f"{DOMAIN}_device_updated"
 SIGNAL_DEVICE_ADDED: Final = f"{DOMAIN}_device_added"
+
 
