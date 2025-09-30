@@ -174,15 +174,36 @@ class WePowerIoTConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
     ) -> FlowResult:
         """Handle device selection from discovered devices."""
         if user_input is not None:
+            # Check if this is a fallback mode selection
+            if "fallback_mode" in user_input:
+                if user_input["fallback_mode"] == "retry":
+                    # Go back to device selection to retry discovery
+                    return await self.async_step_device_selection()
+                elif user_input["fallback_mode"] == "manual":
+                    # Go to manual device entry
+                    return await self.async_step_manual_device()
+            
+            # Check if device_address exists in user_input
+            if "device_address" not in user_input:
+                return self.async_show_form(
+                    step_id="device_selection",
+                    data_schema=vol.Schema({}),
+                    errors={"base": "no_device_selected"},
+                    description_placeholders={
+                        "message": "No device selected. Please try again."
+                    }
+                )
+            
             device_address = user_input["device_address"]
             
             if device_address not in self._discovered_devices:
                 return self.async_show_form(
                     step_id="device_selection",
-                    data_schema=vol.Schema({
-                        vol.Required("device_address"): vol.In({}),
-                    }),
+                    data_schema=vol.Schema({}),
                     errors={"base": "device_not_found"},
+                    description_placeholders={
+                        "message": "Selected device not found. Please try again."
+                    }
                 )
             
             discovery_info = self._discovered_devices[device_address]
@@ -217,10 +238,15 @@ class WePowerIoTConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
         if not device_options:
             return self.async_show_form(
                 step_id="device_selection",
-                data_schema=vol.Schema({}),
+                data_schema=vol.Schema({
+                    vol.Required("fallback_mode"): vol.In({
+                        "retry": "Retry Discovery",
+                        "manual": "Enter Device Manually"
+                    }),
+                }),
                 errors={"base": "no_devices_found"},
                 description_placeholders={
-                    "message": "No WePower IoT devices found. Make sure your devices are powered on and within range."
+                    "message": "No WePower IoT devices found. Make sure your devices are powered on and within range. You can also try going back and entering the decryption key again."
                 }
             )
         
@@ -234,6 +260,53 @@ class WePowerIoTConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
             data_schema=schema,
             description_placeholders={
                 "message": f"Found {len(device_options)} WePower IoT device(s). Select the device you want to add:"
+            }
+        )
+
+    async def async_step_manual_device(
+        self, user_input: dict[str, Any] | None = None
+    ) -> FlowResult:
+        """Handle manual device entry as fallback."""
+        if user_input is not None:
+            address = user_input[CONF_ADDRESS].upper()
+            device_name = user_input.get(CONF_DEVICE_NAME, f"WePower IoT Device {address[-6:]}")
+            sensor_type = int(user_input.get(CONF_SENSOR_TYPE, "4"))
+            
+            # Check if already configured
+            await self.async_set_unique_id(address)
+            self._abort_if_unique_id_configured()
+            
+            # Create the config entry
+            return self.async_create_entry(
+                title=device_name,
+                data={
+                    CONF_NAME: device_name,
+                    CONF_ADDRESS: address,
+                    CONF_DECRYPTION_KEY: self._decryption_key,
+                    CONF_DEVICE_NAME: device_name,
+                    CONF_SENSOR_TYPE: sensor_type,
+                },
+            )
+
+        return self.async_show_form(
+            step_id="manual_device",
+            data_schema=vol.Schema({
+                vol.Required(CONF_ADDRESS): str,
+                vol.Optional(CONF_DEVICE_NAME): str,
+                vol.Optional(CONF_SENSOR_TYPE, default="4"): vol.In({
+                    "1": "Temperature Sensor",
+                    "2": "Humidity Sensor", 
+                    "3": "Pressure Sensor",
+                    "4": "Leak Sensor (Default)",
+                    "5": "Vibration Sensor",
+                    "6": "On/Off Switch",
+                    "7": "Light Switch",
+                    "8": "Door Switch",
+                    "9": "Toggle Switch",
+                }),
+            }),
+            description_placeholders={
+                "message": "Enter device details manually. This is a fallback option when automatic discovery fails."
             }
         )
 
