@@ -51,7 +51,7 @@ BLE_DISCOVERY_MODE_V1_AUTO: Final = "v1_auto"
 
 # Integration name and version
 INTEGRATION_NAME: Final = "WePower IoT"
-INTEGRATION_VERSION: Final = "1.0.56"
+INTEGRATION_VERSION: Final = "1.0.58"
 
 # BLE Packet Format Constants
 BLE_COMPANY_ID: Final = 0x5750  # WePower company ID
@@ -81,9 +81,6 @@ SIGNAL_DEVICE_UPDATED: Final = f"{DOMAIN}_device_updated"
 SIGNAL_DEVICE_ADDED: Final = f"{DOMAIN}_device_added"
 
 # Icon paths
-ICON_BLE_DONGLE: Final = f"/static/{DOMAIN}/ble_dongle.png"
-ICON_ZIGBEE_DONGLE: Final = f"/static/{DOMAIN}/zigbee_dongle.png"
-ICON_BRAND: Final = f"/static/{DOMAIN}/brand/icon.png"
-
-
-
+ICON_BLE_DONGLE: Final = f"/local/custom_components/{DOMAIN}/static/ble_dongle.png"
+ICON_ZIGBEE_DONGLE: Final = f"/local/custom_components/{DOMAIN}/static/zigbee_dongle.png"
+ICON_BRAND: Final = f"/local/custom_components/{DOMAIN}/static/brand/icon.png"
