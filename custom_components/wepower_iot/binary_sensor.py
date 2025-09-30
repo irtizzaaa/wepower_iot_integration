@@ -78,7 +78,7 @@ class WePowerIoTBLESensor(BinarySensorEntity):
         )
         
         # Set custom icon for BLE dongle
-        self._attr_icon = f"/local/custom_components/{DOMAIN}/static/ble_dongle.png"
+        self._attr_icon = "mdi:bluetooth"
         
         # Set initial state
         self._update_state()
@@ -152,7 +152,7 @@ class WePowerIoTZigbeeSensor(BinarySensorEntity):
         )
         
         # Set custom icon for Zigbee dongle
-        self._attr_icon = f"/local/custom_components/{DOMAIN}/static/zigbee_dongle.png"
+        self._attr_icon = "mdi:zigbee"
         
         # Set initial state
         self._update_state()
