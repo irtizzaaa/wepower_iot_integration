@@ -95,9 +95,15 @@ class WePowerIoTBluetoothProcessorCoordinator(
 
     def _parse_advertisement_data(self, service_info: BluetoothServiceInfo) -> dict[str, Any]:
         """Parse WePower IoT advertisement data using new packet format."""
+        # Get professional device ID
+        clean_address = service_info.address.replace(":", "").upper()
+        last_6 = clean_address[-6:]
+        device_number = int(last_6, 16) % 1000  # Get a number between 0-999
+        professional_id = f"Unit-{device_number:03d}"
+        
         data = {
             "address": service_info.address,
-            "name": service_info.name or "Unknown WePower Device",
+            "name": service_info.name or f"WePower IoT Device {professional_id}",
             "rssi": service_info.rssi,
             "timestamp": datetime.now().isoformat(),
             "device_type": "unknown",
@@ -129,18 +135,42 @@ class WePowerIoTBluetoothProcessorCoordinator(
         if 'sensor_data' in data and 'sensor_type' in data['sensor_data']:
             sensor_type = data['sensor_data']['sensor_type']
             _LOGGER.info("🔍 SENSOR TYPE DETECTION: sensor_type=%d (0x%04X)", sensor_type, sensor_type)
-            if sensor_type == 4:
-                data["device_type"] = "leak_sensor"
-                _LOGGER.info("  ✅ Identified as: leak_sensor")
-            elif sensor_type == 1:
+            if sensor_type == 1:
                 data["device_type"] = "temperature_sensor"
+                data["name"] = f"WePower Temperature Sensor {professional_id}"
                 _LOGGER.info("  ✅ Identified as: temperature_sensor")
             elif sensor_type == 2:
                 data["device_type"] = "humidity_sensor"
+                data["name"] = f"WePower Humidity Sensor {professional_id}"
                 _LOGGER.info("  ✅ Identified as: humidity_sensor")
             elif sensor_type == 3:
                 data["device_type"] = "pressure_sensor"
+                data["name"] = f"WePower Pressure Sensor {professional_id}"
                 _LOGGER.info("  ✅ Identified as: pressure_sensor")
+            elif sensor_type == 4:
+                data["device_type"] = "leak_sensor"
+                data["name"] = f"WePower Leak Sensor {professional_id}"
+                _LOGGER.info("  ✅ Identified as: leak_sensor")
+            elif sensor_type == 5:
+                data["device_type"] = "vibration_sensor"
+                data["name"] = f"WePower Vibration Sensor {professional_id}"
+                _LOGGER.info("  ✅ Identified as: vibration_sensor")
+            elif sensor_type == 6:
+                data["device_type"] = "on_off_switch"
+                data["name"] = f"WePower On/Off Switch {professional_id}"
+                _LOGGER.info("  ✅ Identified as: on_off_switch")
+            elif sensor_type == 7:
+                data["device_type"] = "light_switch"
+                data["name"] = f"WePower Light Switch {professional_id}"
+                _LOGGER.info("  ✅ Identified as: light_switch")
+            elif sensor_type == 8:
+                data["device_type"] = "door_switch"
+                data["name"] = f"WePower Door Switch {professional_id}"
+                _LOGGER.info("  ✅ Identified as: door_switch")
+            elif sensor_type == 9:
+                data["device_type"] = "toggle_switch"
+                data["name"] = f"WePower Toggle Switch {professional_id}"
+                _LOGGER.info("  ✅ Identified as: toggle_switch")
             else:
                 _LOGGER.warning("  ⚠️ Unknown sensor type: %d (0x%04X)", sensor_type, sensor_type)
         
@@ -233,25 +263,6 @@ class WePowerIoTBluetoothProcessorCoordinator(
             if 'sensor_event' in sensor_data:
                 result['sensor_event'] = sensor_data['sensor_event']
                 _LOGGER.info("📡 SENSOR EVENT: %s", sensor_data['sensor_event'])
-        
-        # Determine device type based on sensor type
-        if 'sensor_data' in parsed_packet and 'sensor_type' in parsed_packet['sensor_data']:
-            sensor_type = parsed_packet['sensor_data']['sensor_type']
-            if sensor_type == 4:
-                result['device_type'] = "leak_sensor"
-                _LOGGER.info("🏷️ DEVICE TYPE: leak_sensor")
-            elif sensor_type == 1:
-                result['device_type'] = "temperature_sensor"
-                _LOGGER.info("🏷️ DEVICE TYPE: temperature_sensor")
-            elif sensor_type == 2:
-                result['device_type'] = "humidity_sensor"
-                _LOGGER.info("🏷️ DEVICE TYPE: humidity_sensor")
-            elif sensor_type == 3:
-                result['device_type'] = "pressure_sensor"
-                _LOGGER.info("🏷️ DEVICE TYPE: pressure_sensor")
-            else:
-                result['device_type'] = "unknown"
-                _LOGGER.warning("⚠️ UNKNOWN SENSOR TYPE: %d", sensor_type)
         
         _LOGGER.info("🎯 FINAL RESULT: %s", result)
         return result
