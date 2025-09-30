@@ -188,6 +188,56 @@ class WePowerPacket:
                     'leak_detected': sensor_event == 1,  # Assuming 1 means leak detected
                 })
         
+        elif sensor_type == 5:  # Vibration sensor
+            if len(payload) >= 4:
+                # Event Counter (3 bytes) + Sensor Event Report (1 byte)
+                event_counter = struct.unpack('<I', payload[0:3] + b'\x00')[0]  # Pad to 4 bytes
+                sensor_event = payload[3]
+                
+                sensor_data.update({
+                    'event_counter': event_counter,
+                    'sensor_event': sensor_event,
+                    'vibration_detected': sensor_event == 1,  # Assuming 1 means vibration detected
+                })
+        
+        elif sensor_type == 6:  # On/Off Switch
+            if len(payload) >= 1:
+                switch_state = payload[0]
+                
+                sensor_data.update({
+                    'switch_on': switch_state == 1,  # Assuming 1 means switch on
+                    'switch_state': switch_state,
+                })
+        
+        elif sensor_type == 7:  # Light Switch
+            if len(payload) >= 2:
+                switch_state = payload[0]
+                brightness = payload[1]
+                
+                sensor_data.update({
+                    'switch_on': switch_state == 1,
+                    'switch_state': switch_state,
+                    'brightness': brightness,
+                })
+        
+        elif sensor_type == 8:  # Door Switch
+            if len(payload) >= 1:
+                door_state = payload[0]
+                
+                sensor_data.update({
+                    'door_open': door_state == 1,  # Assuming 1 means door open
+                    'door_state': door_state,
+                })
+        
+        elif sensor_type == 9:  # Toggle Switch
+            if len(payload) >= 1:
+                toggle_state = payload[0]
+                
+                sensor_data.update({
+                    'switch_on': toggle_state == 1,
+                    'switch_state': toggle_state,
+                })
+        
         return sensor_data
 
 def parse_wepower_packet(manufacturer_data: bytes, decryption_key: Optional[bytes] = None) -> Optional[Dict[str, Any]]:
