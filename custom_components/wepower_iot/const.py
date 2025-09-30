@@ -80,4 +80,7 @@ SWITCH_TYPE_TOGGLE: Final = 9
 SIGNAL_DEVICE_UPDATED: Final = f"{DOMAIN}_device_updated"
 SIGNAL_DEVICE_ADDED: Final = f"{DOMAIN}_device_added"
 
-
+# Icon paths
+ICON_BLE_DONGLE: Final = f"/static/{DOMAIN}/ble_dongle.png"
+ICON_ZIGBEE_DONGLE: Final = f"/static/{DOMAIN}/zigbee_dongle.png"
+ICON_BRAND: Final = f"/static/{DOMAIN}/brand/icon.png"
