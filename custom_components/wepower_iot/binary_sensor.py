@@ -23,6 +23,8 @@ from .const import (
     DEVICE_STATUS_CONNECTED,
     DEVICE_STATUS_OFFLINE,
     SIGNAL_DEVICE_UPDATED,
+    ICON_BLE_DONGLE,
+    ICON_ZIGBEE_DONGLE,
 )
 
 _LOGGER = logging.getLogger(__name__)
@@ -67,13 +69,14 @@ class WePowerIoTBLESensor(BinarySensorEntity):
         self._attr_icon = "mdi:bluetooth"
         self._attr_should_poll = False
         
-        # Set device info
+        # Set device info with custom icon
         self._attr_device_info = DeviceInfo(
             identifiers={(DOMAIN, "ble_dongle")},
             name="WePower IoT BLE Dongle",
             manufacturer="WePower",
             model="BLE Dongle",
             sw_version="1.0.0",
+            configuration_url=f"https://github.com/wepower/wepower-iot-homeassistant",
         )
         
         # Set initial state
@@ -137,13 +140,14 @@ class WePowerIoTZigbeeSensor(BinarySensorEntity):
         self._attr_icon = "mdi:zigbee"
         self._attr_should_poll = False
         
-        # Set device info
+        # Set device info with custom icon
         self._attr_device_info = DeviceInfo(
             identifiers={(DOMAIN, "zigbee_dongle")},
             name="WePower IoT Zigbee Dongle",
             manufacturer="WePower",
             model="Zigbee Dongle",
             sw_version="1.0.0",
+            configuration_url=f"https://github.com/wepower/wepower-iot-homeassistant",
         )
         
         # Set initial state
