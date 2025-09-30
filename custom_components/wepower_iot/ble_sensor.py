@@ -253,7 +253,7 @@ class WePowerIoTBLESensor(SensorEntity):
         else:
             # Generic sensor
             self._attr_name = f"WePower IoT Sensor {self._get_professional_device_id()}"
-            self._attr_icon = "mdi:bluetooth"
+            self._attr_icon = "mdi:chip"
 
     def _update_device_info(self) -> None:
         """Update device info with proper name and model."""
