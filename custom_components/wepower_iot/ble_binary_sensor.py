@@ -148,6 +148,7 @@ class WePowerIoTBLEBinarySensor(BinarySensorEntity):
         try:
             # Store previous state to detect changes
             previous_state = self._attr_is_on
+            previous_available = self._attr_available
             
             self._update_from_coordinator()
             
@@ -155,7 +156,17 @@ class WePowerIoTBLEBinarySensor(BinarySensorEntity):
             if previous_state != self._attr_is_on:
                 _LOGGER.info("🔄 BINARY SENSOR STATE CHANGED: %s | Previous: %s | New: %s", 
                            self.address, previous_state, self._attr_is_on)
+                
+                # Force state change notification for automations
+                self.async_schedule_update_ha_state()
             
+            # Also notify on availability changes
+            if previous_available != self._attr_available:
+                _LOGGER.info("🔄 BINARY SENSOR AVAILABILITY CHANGED: %s | Previous: %s | New: %s", 
+                           self.address, previous_available, self._attr_available)
+                self.async_schedule_update_ha_state()
+            
+            # Always write state to ensure automations get triggered
             self.async_write_ha_state()
         except Exception as e:
             _LOGGER.error("Error handling coordinator update for %s: %s", self.address, e)
@@ -285,25 +296,25 @@ class WePowerIoTBLEBinarySensor(BinarySensorEntity):
         
         if "leak_detected" in sensor_data:
             # For leak sensors, return True if leak detected, False if not
-            self._attr_is_on = sensor_data["leak_detected"]
+            self._attr_is_on = bool(sensor_data["leak_detected"])
             _LOGGER.info("💧 LEAK BINARY SENSOR: %s | Leak detected: %s | Value: %s", 
                         self.address, sensor_data["leak_detected"], self._attr_is_on)
             
         elif "vibration_detected" in sensor_data:
             # For vibration sensors, return True if vibration detected
-            self._attr_is_on = sensor_data["vibration_detected"]
+            self._attr_is_on = bool(sensor_data["vibration_detected"])
             _LOGGER.info("📳 VIBRATION BINARY SENSOR: %s | Vibration detected: %s | Value: %s", 
                         self.address, sensor_data["vibration_detected"], self._attr_is_on)
             
         elif "door_open" in sensor_data:
             # For door switches, return True if door is open
-            self._attr_is_on = sensor_data["door_open"]
+            self._attr_is_on = bool(sensor_data["door_open"])
             _LOGGER.info("🚪 DOOR BINARY SENSOR: %s | Door open: %s | Value: %s", 
                         self.address, sensor_data["door_open"], self._attr_is_on)
             
         elif "switch_on" in sensor_data:
             # For switches, return True if switch is on
-            self._attr_is_on = sensor_data["switch_on"]
+            self._attr_is_on = bool(sensor_data["switch_on"])
             _LOGGER.info("🔌 SWITCH BINARY SENSOR: %s | Switch on: %s | Value: %s", 
                         self.address, sensor_data["switch_on"], self._attr_is_on)
             
