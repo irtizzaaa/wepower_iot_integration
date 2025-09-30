@@ -62,6 +62,16 @@ async def async_setup_entry(
     sensor_entity = WePowerIoTBLESensor(coordinator, config_entry)
     entities.append(sensor_entity)
     
+    # Also create binary sensor entities
+    from .ble_binary_sensor import WePowerIoTBLEBinarySensor
+    binary_sensor_entity = WePowerIoTBLEBinarySensor(coordinator, config_entry)
+    entities.append(binary_sensor_entity)
+    
+    # Also create switch entities for switch devices
+    from .ble_switch import WePowerIoTBLESwitch
+    switch_entity = WePowerIoTBLESwitch(coordinator, config_entry)
+    entities.append(switch_entity)
+    
     if entities:
         async_add_entities(entities)
 
@@ -181,6 +191,9 @@ class WePowerIoTBLESensor(SensorEntity):
         # Set sensor properties based on device type
         self._set_sensor_properties()
         
+        # Update device info with proper name and model
+        self._update_device_info()
+        
         # Extract sensor value
         self._extract_sensor_value(data)
         
@@ -197,31 +210,79 @@ class WePowerIoTBLESensor(SensorEntity):
         self._attr_device_class = None
         self._attr_state_class = SensorStateClass.MEASUREMENT
         self._attr_native_unit_of_measurement = None
+        self._attr_icon = None
+        
+        # Get short address for display
+        short_address = self.address.replace(":", "")[-6:].upper()
         
         # Set properties based on device type
+        # Skip leak sensors - they should be handled by binary sensor
         if "leak" in device_type:
-            self._attr_device_class = SensorDeviceClass.MOISTURE
-            self._attr_native_unit_of_measurement = PERCENTAGE
-            self._attr_name = f"WePower Leak Sensor {self.address}"
+            # Don't create sensor entities for leak sensors
+            return
             
-        elif "temperature" in device_type:
+        # Skip switch devices - they should be handled by switch platform
+        if "switch" in device_type:
+            # Don't create sensor entities for switch devices
+            return
+            
+        if "temperature" in device_type:
             self._attr_device_class = SensorDeviceClass.TEMPERATURE
             self._attr_native_unit_of_measurement = UnitOfTemperature.CELSIUS
-            self._attr_name = f"WePower Temperature Sensor {self.address}"
+            self._attr_name = f"WePower Temperature Sensor {self._get_professional_device_id()}"
+            self._attr_icon = "mdi:thermometer"
             
         elif "humidity" in device_type:
             self._attr_device_class = SensorDeviceClass.HUMIDITY
             self._attr_native_unit_of_measurement = PERCENTAGE
-            self._attr_name = f"WePower Humidity Sensor {self.address}"
+            self._attr_name = f"WePower Humidity Sensor {self._get_professional_device_id()}"
+            self._attr_icon = "mdi:water-percent"
             
         elif "pressure" in device_type:
             self._attr_device_class = SensorDeviceClass.PRESSURE
             self._attr_native_unit_of_measurement = UnitOfPressure.HPA
-            self._attr_name = f"WePower Pressure Sensor {self.address}"
+            self._attr_name = f"WePower Pressure Sensor {self._get_professional_device_id()}"
+            self._attr_icon = "mdi:gauge"
+            
+        elif "vibration" in device_type:
+            self._attr_device_class = SensorDeviceClass.VIBRATION
+            self._attr_native_unit_of_measurement = "m/s²"
+            self._attr_name = f"WePower Vibration Sensor {self._get_professional_device_id()}"
+            self._attr_icon = "mdi:vibrate"
             
         else:
             # Generic sensor
-            self._attr_name = f"WePower IoT Sensor {self.address}"
+            self._attr_name = f"WePower IoT Sensor {self._get_professional_device_id()}"
+            self._attr_icon = "mdi:bluetooth"
+
+    def _update_device_info(self) -> None:
+        """Update device info with proper name and model."""
+        device_type = self._device_type.lower()
+        
+        # Set model based on device type
+        model_map = {
+            "leak_sensor": "Leak Sensor",
+            "temperature_sensor": "Temperature Sensor",
+            "humidity_sensor": "Humidity Sensor",
+            "pressure_sensor": "Pressure Sensor",
+            "vibration_sensor": "Vibration Sensor",
+            "on_off_switch": "On/Off Switch",
+            "light_switch": "Light Switch",
+            "door_switch": "Door Switch",
+            "toggle_switch": "Toggle Switch",
+            "unknown_device": "IoT Device"
+        }
+        
+        model = model_map.get(device_type, "IoT Sensor")
+        
+        # Update device info
+        self._attr_device_info = DeviceInfo(
+            identifiers={(DOMAIN, self.address)},
+            name=self._attr_name,
+            manufacturer="WePower",
+            model=model,
+            sw_version="1.0.0",
+        )
             
     def _extract_sensor_value(self, data: Dict[str, Any]) -> None:
         """Extract sensor value from coordinator data."""
@@ -231,11 +292,11 @@ class WePowerIoTBLESensor(SensorEntity):
         sensor_data = data.get("sensor_data", {})
         _LOGGER.info("📊 SENSOR DATA: %s | Sensor data: %s", self.address, sensor_data)
         
+        # Skip leak sensors - they should be handled by binary sensor
         if "leak_detected" in sensor_data:
-            # For leak sensors, return 100 if leak detected, 0 if not
-            self._attr_native_value = 100.0 if sensor_data["leak_detected"] else 0.0
-            _LOGGER.info("💧 LEAK SENSOR: %s | Leak detected: %s | Value: %s", 
-                        self.address, sensor_data["leak_detected"], self._attr_native_value)
+            # Don't process leak sensors in regular sensor
+            _LOGGER.info("💧 LEAK SENSOR SKIPPED: %s | Leak detected: %s (handled by binary sensor)", 
+                        self.address, sensor_data["leak_detected"])
             
         elif "temperature" in sensor_data:
             self._attr_native_value = sensor_data["temperature"]
@@ -250,6 +311,11 @@ class WePowerIoTBLESensor(SensorEntity):
         elif "pressure" in sensor_data:
             self._attr_native_value = sensor_data["pressure"]
             _LOGGER.info("📊 PRESSURE SENSOR: %s | Pressure: %s", 
+                        self.address, self._attr_native_value)
+            
+        elif "vibration" in sensor_data:
+            self._attr_native_value = sensor_data["vibration"]
+            _LOGGER.info("📳 VIBRATION SENSOR: %s | Vibration: %s", 
                         self.address, self._attr_native_value)
             
         elif "battery_level" in data and data["battery_level"] is not None:
