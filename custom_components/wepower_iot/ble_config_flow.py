@@ -10,10 +10,9 @@ from homeassistant.components.bluetooth import (
     async_discovered_service_info,
     async_process_advertisements,
 )
-from homeassistant.config_entries import ConfigEntry, ConfigFlow
+from homeassistant.config_entries import ConfigEntry, ConfigFlow, FlowResult
 from homeassistant.const import CONF_ADDRESS, CONF_NAME
 from homeassistant.core import HomeAssistant
-from homeassistant.data_entry_flow import FlowResult
 import voluptuous as vol
 
 from .const import DOMAIN, BLE_COMPANY_ID, CONF_DECRYPTION_KEY, CONF_DEVICE_NAME, CONF_SENSOR_TYPE
@@ -113,14 +112,6 @@ class WePowerIoTBluetoothConfigFlow(ConfigFlow, domain=DOMAIN):
         self, discovery_info: BluetoothServiceInfo
     ) -> FlowResult:
         """Handle the bluetooth discovery step - but we don't auto-configure."""
-        # Print discovery info for debugging
-        print(f"BLE DISCOVERY INFO: {discovery_info}")
-        print(f"Device Name: {discovery_info.name}")
-        print(f"Device Address: {discovery_info.address}")
-        print(f"Manufacturer Data: {discovery_info.manufacturer_data}")
-        print(f"Service Data: {discovery_info.service_data}")
-        print(f"Service UUIDs: {discovery_info.service_uuids}")
-        
         # We don't auto-configure devices anymore, just show them as available
         await self.async_set_unique_id(discovery_info.address)
         self._abort_if_unique_id_configured()
@@ -129,9 +120,130 @@ class WePowerIoTBluetoothConfigFlow(ConfigFlow, domain=DOMAIN):
         if not self._is_wepower_device(discovery_info):
             return self.async_abort(reason="not_supported")
         
-        # Store the device info but don't auto-configure
-        self._discovered_devices[discovery_info.address] = discovery_info
-        return self.async_abort(reason="manual_provisioning_required")
+        # Extract device type from beacon data for better discovery display
+        device_type, device_name = self._extract_device_info_from_beacon(discovery_info)
+        
+        # Store the device info with extracted type
+        self._discovered_devices[discovery_info.address] = {
+            "discovery_info": discovery_info,
+            "device_type": device_type,
+            "device_name": device_name
+        }
+        
+        return self.async_abort(reason="device_selection_required")
+
+    async def async_step_device_selection(
+        self, user_input: dict[str, Any] | None = None
+    ) -> FlowResult:
+        """Handle device selection step."""
+        if user_input is None:
+            # Show discovered devices
+            devices = []
+            for address, device_info in self._discovered_devices.items():
+                device_type = device_info.get("device_type", "unknown")
+                device_name = device_info.get("device_name", "WePower IoT Device")
+                
+                # Add device type icon
+                icon_map = {
+                    "leak_sensor": "mdi:water",
+                    "vibration_sensor": "mdi:vibrate", 
+                    "two_way_switch": "mdi:toggle-switch",
+                    "button": "mdi:gesture-tap-button",
+                    "legacy": "mdi:chip",
+                    "unknown": "mdi:chip"
+                }
+                
+                devices.append({
+                    "value": address,
+                    "label": f"{device_name} ({address})",
+                    "icon": icon_map.get(device_type, "mdi:chip")
+                })
+            
+            return self.async_show_form(
+                step_id="device_selection",
+                data_schema=vol.Schema({
+                    vol.Required("device"): vol.In({
+                        device["value"]: device["label"] 
+                        for device in devices
+                    })
+                }),
+                description_placeholders={
+                    "message": "Select the WePower IoT device you want to configure:"
+                }
+            )
+        
+        # Device selected, proceed to configuration
+        selected_address = user_input["device"]
+        device_info = self._discovered_devices[selected_address]
+        
+        # Store selected device info for next step
+        self._selected_device = device_info
+        
+        return await self.async_step_user_config()
+
+    async def async_step_user_config(
+        self, user_input: dict[str, Any] | None = None
+    ) -> FlowResult:
+        """Handle user configuration step with device-specific info."""
+        if user_input is None:
+            device_info = self._selected_device
+            device_type = device_info.get("device_type", "unknown")
+            device_name = device_info.get("device_name", "WePower IoT Device")
+            
+            # Create device-specific schema
+            schema = {
+                vol.Required(CONF_DECRYPTION_KEY): str,
+            }
+            
+            # Add device-specific description
+            descriptions = {
+                "leak_sensor": "Configure your WePower Leak Sensor. This device detects water leaks and moisture.",
+                "vibration_sensor": "Configure your WePower Vibration Monitor. This device detects vibrations and movement.",
+                "two_way_switch": "Configure your WePower Two-Way Switch. This device can be turned on/off remotely.",
+                "button": "Configure your WePower Button. This device sends signals when pressed.",
+                "legacy": "Configure your WePower Legacy Device. This device provides basic IoT functionality.",
+                "unknown": "Configure your WePower IoT Device. This device provides IoT functionality."
+            }
+            
+            return self.async_show_form(
+                step_id="user_config",
+                data_schema=vol.Schema(schema),
+                description_placeholders={
+                    "message": descriptions.get(device_type, descriptions["unknown"]),
+                    "device_name": device_name,
+                    "device_type": device_type.replace("_", " ").title()
+                }
+            )
+        
+        # Configuration complete
+        device_info = self._selected_device
+        discovery_info = device_info["discovery_info"]
+        device_type = device_info.get("device_type", "unknown")
+        device_name = device_info.get("device_name", "WePower IoT Device")
+        
+        # Map device type to sensor type
+        sensor_type_map = {
+            "legacy": 0,
+            "button": 1,
+            "vibration_sensor": 2,
+            "two_way_switch": 3,
+            "leak_sensor": 4,
+            "unknown": 4  # Default to leak sensor
+        }
+        
+        sensor_type = sensor_type_map.get(device_type, 4)
+        
+        # Create the config entry
+        return self.async_create_entry(
+            title=device_name,
+            data={
+                CONF_NAME: device_name,
+                CONF_ADDRESS: discovery_info.address,
+                CONF_DECRYPTION_KEY: user_input[CONF_DECRYPTION_KEY],
+                CONF_DEVICE_NAME: device_type,
+                CONF_SENSOR_TYPE: sensor_type,
+            },
+        )
 
     def _is_wepower_device(self, discovery_info: BluetoothServiceInfo) -> bool:
         """Check if this is a WePower IoT device using new packet format."""
@@ -147,6 +259,61 @@ class WePowerIoTBluetoothConfigFlow(ConfigFlow, domain=DOMAIN):
             return True
         
         return False
+    
+    def _extract_device_info_from_beacon(self, discovery_info: BluetoothServiceInfo) -> tuple[str, str]:
+        """Extract device type and name from beacon data."""
+        try:
+            # Try to parse manufacturer data to get device type
+            if discovery_info.manufacturer_data:
+                for manufacturer_id, data in discovery_info.manufacturer_data.items():
+                    if manufacturer_id == BLE_COMPANY_ID and len(data) >= 20:
+                        # Try to parse the packet to get device type
+                        try:
+                            from .packet_parser import WePowerPacket
+                            packet = WePowerPacket(data)
+                            if packet.is_valid():
+                                sensor_type = packet.sensor_type
+                                
+                                # Map sensor type to device type and name
+                                device_type_map = {
+                                    0: ("legacy", "Legacy Device"),
+                                    1: ("button", "Button"),
+                                    2: ("vibration_sensor", "Vibration Monitor"),
+                                    3: ("two_way_switch", "Two-Way Switch"),
+                                    4: ("leak_sensor", "Leak Sensor"),
+                                }
+                                
+                                device_type, device_name = device_type_map.get(sensor_type, ("unknown", "IoT Device"))
+                                
+                                # Generate professional device name
+                                short_address = discovery_info.address.replace(":", "")[-6:].upper()
+                                device_number = int(short_address, 16) % 1000
+                                professional_name = f"WePower {device_name} Unit-{device_number:03d}"
+                                
+                                return device_type, professional_name
+                        except Exception as e:
+                            print(f"Error parsing beacon data: {e}")
+                            pass
+            
+            # Fallback: use device name or generate generic name
+            device_name = discovery_info.name or "WePower IoT Device"
+            if "WePower" in device_name:
+                # Try to extract device type from name
+                if "Leak" in device_name or "leak" in device_name:
+                    return "leak_sensor", "WePower Leak Sensor"
+                elif "Vibration" in device_name or "vibration" in device_name:
+                    return "vibration_sensor", "WePower Vibration Monitor"
+                elif "Switch" in device_name or "switch" in device_name:
+                    return "two_way_switch", "WePower Two-Way Switch"
+                elif "Button" in device_name or "button" in device_name:
+                    return "button", "WePower Button"
+            
+            # Default fallback
+            return "unknown", "WePower IoT Device"
+            
+        except Exception as e:
+            print(f"Error extracting device info: {e}")
+            return "unknown", "WePower IoT Device"
 
     async def async_step_import(self, import_data: dict[str, Any]) -> FlowResult:
         """Handle import from configuration.yaml."""
