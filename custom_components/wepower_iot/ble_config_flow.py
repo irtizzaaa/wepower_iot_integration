@@ -22,8 +22,6 @@ _LOGGER = logging.getLogger(__name__)
 
 STEP_USER_DATA_SCHEMA = vol.Schema(
     {
-        vol.Required(CONF_NAME): str,
-        vol.Required(CONF_ADDRESS): str,
         vol.Required(CONF_DECRYPTION_KEY): str,
         vol.Optional(CONF_DEVICE_NAME): str,
         vol.Optional(CONF_SENSOR_TYPE, default=4): vol.In({
@@ -61,12 +59,10 @@ class WePowerIoTBluetoothConfigFlow(ConfigFlow, domain=DOMAIN):
     async def async_step_user(
         self, user_input: dict[str, Any] | None = None
     ) -> FlowResult:
-        """Handle the initial step - manual device provisioning."""
+        """Handle the initial step - automatic device provisioning from beacon."""
         if user_input is not None:
-            address = user_input[CONF_ADDRESS].upper()
-            name = user_input[CONF_NAME]
             decryption_key = user_input[CONF_DECRYPTION_KEY]
-            device_name = user_input.get(CONF_DEVICE_NAME, name)
+            device_name = user_input.get(CONF_DEVICE_NAME, "WePower IoT Device")
             sensor_type = int(user_input.get(CONF_SENSOR_TYPE, "4"))  # Convert string to int, default to leak sensor
             
             # Validate decryption key format
@@ -84,6 +80,19 @@ class WePowerIoTBluetoothConfigFlow(ConfigFlow, domain=DOMAIN):
                     data_schema=STEP_USER_DATA_SCHEMA,
                     errors={"base": "invalid_decryption_key_format"},
                 )
+            
+            # Get the first discovered WePower device
+            if not self._discovered_devices:
+                return self.async_show_form(
+                    step_id="user",
+                    data_schema=STEP_USER_DATA_SCHEMA,
+                    errors={"base": "no_devices_discovered"},
+                )
+            
+            # Use the first discovered device
+            discovery_info = next(iter(self._discovered_devices.values()))
+            address = discovery_info.address.upper()
+            name = discovery_info.name or "WePower IoT Device"
             
             # Check if already configured
             await self.async_set_unique_id(address)
@@ -105,15 +114,15 @@ class WePowerIoTBluetoothConfigFlow(ConfigFlow, domain=DOMAIN):
             step_id="user",
             data_schema=STEP_USER_DATA_SCHEMA,
             description_placeholders={
-                "message": "Manually provision a WePower IoT device by entering its MAC address and decryption key.\n\nSensor Types:\n• Type 1: Temperature Sensor\n• Type 2: Humidity Sensor\n• Type 3: Pressure Sensor\n• Type 4: Leak Sensor (Default)\n\nDecryption Key: 32-character hex string (16 bytes)"
+                "message": "WePower IoT device detected! Enter your decryption key to complete setup.\n\nSensor Types:\n• Type 1: Temperature Sensor\n• Type 2: Humidity Sensor\n• Type 3: Pressure Sensor\n• Type 4: Leak Sensor (Default)\n\nDecryption Key: 32-character hex string (16 bytes)"
             }
         )
 
     async def async_step_bluetooth(
         self, discovery_info: BluetoothServiceInfo
     ) -> FlowResult:
-        """Handle the bluetooth discovery step - but we don't auto-configure."""
-        # We don't auto-configure devices anymore, just show them as available
+        """Handle the bluetooth discovery step - store discovered devices."""
+        # Check if already configured
         await self.async_set_unique_id(discovery_info.address)
         self._abort_if_unique_id_configured()
         
@@ -121,9 +130,11 @@ class WePowerIoTBluetoothConfigFlow(ConfigFlow, domain=DOMAIN):
         if not self._is_wepower_device(discovery_info):
             return self.async_abort(reason="not_supported")
         
-        # Store the device info but don't auto-configure
+        # Store the device info for later use
         self._discovered_devices[discovery_info.address] = discovery_info
-        return self.async_abort(reason="manual_provisioning_required")
+        
+        # Show the user form to enter decryption key
+        return await self.async_step_user()
 
     def _is_wepower_device(self, discovery_info: BluetoothServiceInfo) -> bool:
         """Check if this is a WePower IoT device using new packet format."""
