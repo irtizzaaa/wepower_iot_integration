@@ -13,7 +13,7 @@ from homeassistant.core import HomeAssistant
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
 from homeassistant.helpers.entity import DeviceInfo
 
-from .const import DOMAIN, CONF_ADDRESS
+from .const import DOMAIN, CONF_ADDRESS, CONF_NAME
 from .ble_coordinator import WePowerIoTBluetoothProcessorCoordinator
 
 _LOGGER = logging.getLogger(__name__)
@@ -69,16 +69,16 @@ class WePowerIoTBLEBinarySensor(BinarySensorEntity):
         # Don't store address statically - get it dynamically from config data
         
         # Set up basic entity properties
-        self._attr_name = config_entry.data.get("name", "WePower IoT Device")
+        self._attr_name = config_entry.data.get(CONF_NAME, "WePower IoT Device")
         self._attr_unique_id = f"{DOMAIN}_{config_entry.entry_id}_binary"
         self._attr_should_poll = False
         
-        # Set device info
+        # Set device info - will be updated when device type is known
         self._attr_device_info = DeviceInfo(
             identifiers={(DOMAIN, config_entry.entry_id)},
             name=self._attr_name,
             manufacturer="WePower",
-            model="BLE Sensor",
+            model="IoT Device",  # Generic model, will be updated
             sw_version="1.0.0",
         )
         
@@ -175,9 +175,15 @@ class WePowerIoTBLEBinarySensor(BinarySensorEntity):
         data = self.coordinator.data
         _LOGGER.info("🔄 UPDATING BINARY SENSOR: %s | Coordinator data: %s", self.address, data)
         
-        # Update device type
+        # Update device type and name from coordinator data
         self._device_type = data.get("device_type", "unknown")
-        _LOGGER.info("🏷️ DEVICE TYPE: %s | Type: %s", self.address, self._device_type)
+        coordinator_name = data.get("name", "WePower IoT Device")
+        
+        # Update the entity name if coordinator has a better name
+        if coordinator_name != "WePower IoT Device":
+            self._attr_name = coordinator_name
+        
+        _LOGGER.info("🏷️ DEVICE TYPE: %s | Type: %s | Name: %s", self.address, self._device_type, self._attr_name)
         
         # Set sensor properties based on device type
         self._set_sensor_properties()
@@ -260,7 +266,7 @@ class WePowerIoTBLEBinarySensor(BinarySensorEntity):
         
         # Update device info
         self._attr_device_info = DeviceInfo(
-            identifiers={(DOMAIN, self.address)},
+            identifiers={(DOMAIN, self.config_entry.entry_id)},
             name=self._attr_name,
             manufacturer="WePower",
             model=model,
