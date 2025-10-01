@@ -318,7 +318,7 @@ class WePowerIoTConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
         
         if discovery_info.manufacturer_data:
             for manufacturer_id, data in discovery_info.manufacturer_data.items():
-                if manufacturer_id == BLE_COMPANY_ID and len(data) >= 20:
+                if manufacturer_id == BLE_COMPANY_ID and len(data) >= 18:
                     # Extract sensor type from manufacturer data
                     try:
                         sensor_type = data[2] if len(data) > 2 else 4  # Default to leak sensor
@@ -373,7 +373,7 @@ class WePowerIoTConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
         # Check manufacturer data for new Company ID
         if discovery_info.manufacturer_data:
             for manufacturer_id, data in discovery_info.manufacturer_data.items():
-                if manufacturer_id == BLE_COMPANY_ID and len(data) >= 20:
+                if manufacturer_id == BLE_COMPANY_ID and len(data) >= 18:
                     return True
         
         # Check name patterns as fallback
