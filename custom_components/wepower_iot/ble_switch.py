@@ -10,7 +10,7 @@ from homeassistant.core import HomeAssistant
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
 from homeassistant.helpers.entity import DeviceInfo
 
-from .const import DOMAIN
+from .const import DOMAIN, CONF_ADDRESS
 from .ble_coordinator import WePowerIoTBluetoothProcessorCoordinator
 
 _LOGGER = logging.getLogger(__name__)
@@ -63,7 +63,8 @@ class WePowerIoTBLESwitch(SwitchEntity):
         """Initialize the BLE switch."""
         self.coordinator = coordinator
         self.config_entry = config_entry
-        self.address = config_entry.unique_id
+        # Get the current MAC address from config data (may have been updated by discovery)
+        self.address = config_entry.data.get(CONF_ADDRESS, config_entry.unique_id)
         
         # Set up basic entity properties
         self._attr_name = config_entry.data.get("name", f"WePower IoT {self.address}")
