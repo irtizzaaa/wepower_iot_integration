@@ -95,7 +95,8 @@ class WePowerIoTBLESensor(SensorEntity):
         """Initialize the BLE sensor."""
         self.coordinator = coordinator
         self.config_entry = config_entry
-        self.address = config_entry.unique_id
+        # Get the current MAC address from config data (may have been updated by discovery)
+        self.address = config_entry.data.get(CONF_ADDRESS, config_entry.unique_id)
         
         # Set up basic entity properties
         self._attr_name = config_entry.data.get(CONF_NAME, f"WePower IoT {self.address}")
