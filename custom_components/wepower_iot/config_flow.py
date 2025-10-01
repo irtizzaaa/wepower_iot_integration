@@ -171,10 +171,15 @@ class WePowerIoTConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
                     errors={"base": "invalid_decryption_key_format"},
                 )
             
-            # For now, use a placeholder MAC address - this will be replaced by the Bluetooth integration
-            # The actual MAC address will be determined when the device connects
+            # Generate a unique ID for this config entry
+            # This will be used by the coordinator to identify the device
+            unique_id = f"wepower_ble_{device_name.lower().replace(' ', '_')}"
             address = "00:00:00:00:00:00"  # Placeholder - will be updated by Bluetooth integration
             name = "WePower IoT Device"
+            
+            # Set the unique ID for this entry
+            await self.async_set_unique_id(unique_id)
+            self._abort_if_unique_id_configured()
             
             # Create the config entry
             return self.async_create_entry(
