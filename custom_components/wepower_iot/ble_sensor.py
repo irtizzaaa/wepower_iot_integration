@@ -44,7 +44,7 @@ async def async_setup_entry(
         address = config_entry.unique_id
     
     # If still no address, skip BLE sensor setup
-    if not address or address.startswith("wepower_temp_"):
+    if not address or address.startswith("wepower_temp_") or address.startswith("wepower_discovery_"):
         _LOGGER.info("No real BLE device address found, skipping BLE sensor setup for entry %s", config_entry.entry_id)
         return
     
