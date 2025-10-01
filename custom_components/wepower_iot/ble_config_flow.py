@@ -60,7 +60,7 @@ class WePowerIoTBluetoothConfigFlow(ConfigFlow, domain=DOMAIN):
     async def async_step_user(
         self, user_input: dict[str, Any] | None = None
     ) -> FlowResult:
-        """Handle the initial step - show device selection if devices are discovered."""
+        """Handle the initial step - auto-configure with discovered device."""
         # If no devices discovered yet, show a message
         if not self._discovered_devices:
             return self.async_show_form(
@@ -71,83 +71,71 @@ class WePowerIoTBluetoothConfigFlow(ConfigFlow, domain=DOMAIN):
                 }
             )
         
-        # If devices are discovered, show device selection
-        if user_input is None:
-            # Build device options
-            device_options = {}
-            for address, discovery_info in self._discovered_devices.items():
-                device_name = discovery_info.name or f"WePower Device {address[-6:]}"
-                device_options[address] = f"{device_name} ({address})"
-            
-            # Update the schema with discovered devices
-            schema = STEP_DEVICE_SELECTION_SCHEMA.extend({
-                vol.Required("device_address"): vol.In(device_options)
-            })
-            
-            return self.async_show_form(
-                step_id="user",
-                data_schema=schema,
-                description_placeholders={
-                    "message": f"Found {len(self._discovered_devices)} WePower IoT device(s). Select the device you want to configure and enter your decryption key.\n\nSensor Types:\n• Type 1: Temperature Sensor\n• Type 2: Humidity Sensor\n• Type 3: Pressure Sensor\n• Type 4: Leak Sensor (Default)\n\nDecryption Key: 32-character hex string (16 bytes)"
-                }
-            )
-        
-        # Process the user input
-        device_address = user_input["device_address"]
-        decryption_key = user_input[CONF_DECRYPTION_KEY]
-        device_name = user_input.get(CONF_DEVICE_NAME, "WePower IoT Device")
-        sensor_type = int(user_input.get(CONF_SENSOR_TYPE, "4"))
-        
-        # Validate decryption key format
-        try:
-            bytes.fromhex(decryption_key)
-            if len(decryption_key) != 32:  # 16 bytes = 32 hex chars
-                return self.async_show_form(
-                    step_id="user",
-                    data_schema=STEP_DEVICE_SELECTION_SCHEMA,
-                    errors={"base": "invalid_decryption_key_length"},
-                )
-        except ValueError:
-            return self.async_show_form(
-                step_id="user",
-                data_schema=STEP_DEVICE_SELECTION_SCHEMA,
-                errors={"base": "invalid_decryption_key_format"},
-            )
-        
-        # Get the selected device info
-        discovery_info = self._discovered_devices[device_address]
+        # Get the discovered device (should be only one when called from bluetooth step)
+        discovery_info = next(iter(self._discovered_devices.values()))
         address = discovery_info.address.upper()
         name = discovery_info.name or "WePower IoT Device"
         
-        # Check if already configured
-        await self.async_set_unique_id(address)
-        self._abort_if_unique_id_configured()
+        # If user input is provided, process it
+        if user_input is not None:
+            decryption_key = user_input[CONF_DECRYPTION_KEY]
+            device_name = user_input.get(CONF_DEVICE_NAME, name)
+            sensor_type = int(user_input.get(CONF_SENSOR_TYPE, "4"))
+            
+            # Validate decryption key format
+            try:
+                bytes.fromhex(decryption_key)
+                if len(decryption_key) != 32:  # 16 bytes = 32 hex chars
+                    return self.async_show_form(
+                        step_id="user",
+                        data_schema=STEP_USER_DATA_SCHEMA,
+                        errors={"base": "invalid_decryption_key_length"},
+                    )
+            except ValueError:
+                return self.async_show_form(
+                    step_id="user",
+                    data_schema=STEP_USER_DATA_SCHEMA,
+                    errors={"base": "invalid_decryption_key_format"},
+                )
+            
+            # Create the config entry with auto-populated MAC address
+            return self.async_create_entry(
+                title=device_name,
+                data={
+                    CONF_NAME: name,
+                    CONF_ADDRESS: address,  # Auto-populated from beacon!
+                    CONF_DECRYPTION_KEY: decryption_key,
+                    CONF_DEVICE_NAME: device_name,
+                    CONF_SENSOR_TYPE: sensor_type,
+                },
+            )
         
-        # Create the config entry
-        return self.async_create_entry(
-            title=device_name,
-            data={
-                CONF_NAME: name,
-                CONF_ADDRESS: address,
-                CONF_DECRYPTION_KEY: decryption_key,
-                CONF_DEVICE_NAME: device_name,
-                CONF_SENSOR_TYPE: sensor_type,
-            },
+        # Show the form with device info pre-filled
+        return self.async_show_form(
+            step_id="user",
+            data_schema=STEP_USER_DATA_SCHEMA,
+            description_placeholders={
+                "message": f"WePower IoT device detected!\n\nDevice: {name}\nMAC Address: {address}\n\nEnter your decryption key to complete setup.\n\nSensor Types:\n• Type 1: Temperature Sensor\n• Type 2: Humidity Sensor\n• Type 3: Pressure Sensor\n• Type 4: Leak Sensor (Default)\n\nDecryption Key: 32-character hex string (16 bytes)"
+            }
         )
 
     async def async_step_bluetooth(
         self, discovery_info: BluetoothServiceInfo
     ) -> FlowResult:
-        """Handle the bluetooth discovery step - store discovered devices."""
+        """Handle the bluetooth discovery step - auto-configure the device."""
         # Check if this looks like a WePower IoT device
         if not self._is_wepower_device(discovery_info):
             return self.async_abort(reason="not_supported")
         
-        # Store the device info for later use
+        # Check if already configured
+        await self.async_set_unique_id(discovery_info.address)
+        self._abort_if_unique_id_configured()
+        
+        # Store the device info
         self._discovered_devices[discovery_info.address] = discovery_info
         
-        # Don't auto-configure, just store the device
-        return self.async_abort(reason="device_discovered")
+        # Show the user form to enter decryption key only
+        return await self.async_step_user()
 
     def _is_wepower_device(self, discovery_info: BluetoothServiceInfo) -> bool:
         """Check if this is a WePower IoT device using new packet format."""
