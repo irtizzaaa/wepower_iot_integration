@@ -50,15 +50,12 @@ class WePowerIoTBluetoothProcessorCoordinator(
         _LOGGER.info("🔍 Unique ID: %s", entry.unique_id)
         _LOGGER.info("🔍 Address from config: %s", address)
         
+        # If we have a placeholder MAC, we need to discover the real device
         if not address or address == "00:00:00:00:00:00":
-            # If no real address, use the unique_id as fallback
-            address = entry.unique_id
-            _LOGGER.info("🔍 Using unique_id as address: %s", address)
-        
-        # If still no address, generate a temporary one
-        if not address:
-            address = f"wepower_temp_{entry.entry_id}"
-            _LOGGER.warning("🔍 No address found, using temporary: %s", address)
+            _LOGGER.warning("🔍 Placeholder MAC address detected, will discover real device")
+            # Use a temporary identifier for now
+            address = f"wepower_discovery_{entry.entry_id}"
+            _LOGGER.info("🔍 Using discovery identifier: %s", address)
         
         assert address is not None
         super().__init__(
@@ -76,7 +73,7 @@ class WePowerIoTBluetoothProcessorCoordinator(
         _LOGGER.info("🔍 Coordinator async_init with address: %s", self.address)
         
         # Check if we have a real MAC address or if we need to discover devices
-        if self.address == "00:00:00:00:00:00" or not self.address or self.address.startswith("wepower_temp_"):
+        if self.address == "00:00:00:00:00:00" or not self.address or self.address.startswith("wepower_discovery_"):
             _LOGGER.warning("No real MAC address provided (%s), coordinator will wait for device discovery", self.address)
             # Try to discover WePower devices
             await self._discover_and_update_address()
