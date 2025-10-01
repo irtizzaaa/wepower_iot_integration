@@ -7,6 +7,10 @@ import voluptuous as vol
 
 from homeassistant import config_entries
 from homeassistant.const import CONF_HOST, CONF_PASSWORD, CONF_PORT, CONF_USERNAME, CONF_NAME, CONF_ADDRESS
+from homeassistant.components.bluetooth import (
+    BluetoothServiceInfo,
+    async_discovered_service_info,
+)
 from homeassistant.data_entry_flow import FlowResult
 
 from .const import (
@@ -33,6 +37,10 @@ class WePowerIoTConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
     """Handle a config flow for WePower IoT."""
 
     VERSION = 1
+    
+    def __init__(self) -> None:
+        """Initialize the config flow."""
+        self._discovered_devices: dict[str, BluetoothServiceInfo] = {}
 
     async def async_step_user(
         self, user_input: dict[str, Any] | None = None
@@ -128,6 +136,9 @@ class WePowerIoTConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
 
     async def async_step_ble(self, user_input: dict[str, Any] | None = None) -> FlowResult:
         """Handle BLE configuration step - automatic MAC population from beacon."""
+        # First, discover WePower devices
+        await self._discover_wepower_devices()
+        
         if user_input is not None:
             decryption_key = user_input[CONF_DECRYPTION_KEY]
             device_name = user_input.get(CONF_DEVICE_NAME, "WePower IoT Device")
@@ -167,10 +178,27 @@ class WePowerIoTConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
                     errors={"base": "invalid_decryption_key_format"},
                 )
             
-            # For now, use a placeholder MAC address - this should be replaced with actual beacon data
-            # In a real implementation, this would come from the Bluetooth discovery
-            address = "AA:BB:CC:DD:EE:FF"  # Placeholder - should be from beacon
-            name = "WePower IoT Device"
+            # Get the first discovered WePower device
+            if not self._discovered_devices:
+                return self.async_show_form(
+                    step_id="ble",
+                    data_schema=vol.Schema({
+                        vol.Required(CONF_DECRYPTION_KEY): str,
+                        vol.Optional(CONF_DEVICE_NAME): str,
+                        vol.Optional(CONF_SENSOR_TYPE, default="4"): vol.In({
+                            "1": "Temperature Sensor",
+                            "2": "Humidity Sensor", 
+                            "3": "Pressure Sensor",
+                            "4": "Leak Sensor (Default)"
+                        }),
+                    }),
+                    errors={"base": "no_devices_found"},
+                )
+            
+            # Use the first discovered device
+            discovery_info = next(iter(self._discovered_devices.values()))
+            address = discovery_info.address.upper()
+            name = discovery_info.name or "WePower IoT Device"
             
             # Check if already configured
             await self.async_set_unique_id(address)
@@ -181,12 +209,21 @@ class WePowerIoTConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
                 title=device_name,
                 data={
                     CONF_NAME: name,
-                    CONF_ADDRESS: address,  # This should be auto-populated from beacon
+                    CONF_ADDRESS: address,  # Real MAC address from beacon!
                     CONF_DECRYPTION_KEY: decryption_key,
                     CONF_DEVICE_NAME: device_name,
                     CONF_SENSOR_TYPE: sensor_type,
                 },
             )
+
+        # Show the form
+        if self._discovered_devices:
+            device_info = next(iter(self._discovered_devices.values()))
+            device_name = device_info.name or "WePower IoT Device"
+            device_address = device_info.address
+            message = f"WePower IoT BLE device detected!\n\nDevice: {device_name}\nMAC Address: {device_address}\n\nMAC Address will be automatically populated from beacon data.\n\nEnter your decryption key to complete setup.\n\nSensor Types:\n• Type 1: Temperature Sensor\n• Type 2: Humidity Sensor\n• Type 3: Pressure Sensor\n• Type 4: Leak Sensor (Default)\n\nDecryption Key: 32-character hex string (16 bytes)"
+        else:
+            message = "No WePower IoT devices detected yet.\n\nPlease make sure your WePower device is powered on and broadcasting.\n\nEnter your decryption key and the integration will automatically detect the device.\n\nSensor Types:\n• Type 1: Temperature Sensor\n• Type 2: Humidity Sensor\n• Type 3: Pressure Sensor\n• Type 4: Leak Sensor (Default)\n\nDecryption Key: 32-character hex string (16 bytes)"
 
         return self.async_show_form(
             step_id="ble",
@@ -200,10 +237,37 @@ class WePowerIoTConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
                     "4": "Leak Sensor (Default)"
                 }),
             }),
-            description_placeholders={
-                "message": "WePower IoT BLE device detected!\n\nMAC Address will be automatically populated from beacon data.\n\nEnter your decryption key to complete setup.\n\nSensor Types:\n• Type 1: Temperature Sensor\n• Type 2: Humidity Sensor\n• Type 3: Pressure Sensor\n• Type 4: Leak Sensor (Default)\n\nDecryption Key: 32-character hex string (16 bytes)"
-            }
+            description_placeholders={"message": message}
         )
+
+    async def _discover_wepower_devices(self) -> None:
+        """Discover WePower IoT devices via Bluetooth."""
+        try:
+            # Get all discovered Bluetooth devices
+            discovered_devices = await async_discovered_service_info(self.hass)
+            
+            # Filter for WePower devices
+            for device in discovered_devices:
+                if self._is_wepower_device(device):
+                    self._discovered_devices[device.address] = device
+                    
+        except Exception as e:
+            _LOGGER.warning("Failed to discover WePower devices: %s", e)
+    
+    def _is_wepower_device(self, discovery_info: BluetoothServiceInfo) -> bool:
+        """Check if this is a WePower IoT device."""
+        # Check manufacturer data for WePower Company ID (22352)
+        if discovery_info.manufacturer_data:
+            for manufacturer_id, data in discovery_info.manufacturer_data.items():
+                if manufacturer_id == 22352 and len(data) >= 20:  # WePower Company ID
+                    return True
+        
+        # Check name patterns as fallback
+        name = discovery_info.name or ""
+        if any(pattern in name.upper() for pattern in ["WEPOWER", "WP"]):
+            return True
+        
+        return False
 
     async def async_step_import(self, import_info: dict[str, Any]) -> FlowResult:
         """Handle import from configuration.yaml."""
