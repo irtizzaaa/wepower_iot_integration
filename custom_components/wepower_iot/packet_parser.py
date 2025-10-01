@@ -175,8 +175,8 @@ class WePowerPacket:
             'power_status': decrypted_data['power_status'],
         }
         
-        # Parse based on sensor type
-        if sensor_type == 4:  # Leak sensor
+        # Parse based on sensor type (matching device_type_t enum)
+        if sensor_type == 4:  # DEVICE_TYPE_LEAK_SENSOR
             if len(payload) >= 4:
                 # Event Counter (3 bytes) + Sensor Event Report (1 byte)
                 event_counter = struct.unpack('<I', payload[0:3] + b'\x00')[0]  # Pad to 4 bytes
@@ -185,7 +185,7 @@ class WePowerPacket:
                 sensor_data.update({
                     'event_counter': event_counter,
                     'sensor_event': sensor_event,
-                    'leak_detected': sensor_event == 4,  # sensor_event 4 means leak detected
+                    'leak_detected': sensor_event == 4,  # EVENT_TYPE_LEAK_DETECTED = 4
                 })
             else:
                 # No payload data - device is off/no leak
@@ -195,54 +195,55 @@ class WePowerPacket:
                     'leak_detected': False,  # No payload means no leak detected
                 })
         
-        elif sensor_type == 5:  # Vibration sensor
+        elif sensor_type == 2:  # DEVICE_TYPE_VIBRATION_MONITOR
             if len(payload) >= 4:
-                # Event Counter (3 bytes) + Sensor Event Report (1 byte)
-                event_counter = struct.unpack('<I', payload[0:3] + b'\x00')[0]  # Pad to 4 bytes
+                event_counter = struct.unpack('<I', payload[0:3] + b'\x00')[0]
                 sensor_event = payload[3]
                 
                 sensor_data.update({
                     'event_counter': event_counter,
                     'sensor_event': sensor_event,
-                    'vibration_detected': sensor_event == 1,  # Assuming 1 means vibration detected
+                    'vibration_detected': sensor_event == 1,  # EVENT_TYPE_VIBRATION = 1
+                })
+            else:
+                sensor_data.update({
+                    'event_counter': 0,
+                    'sensor_event': 0,
+                    'vibration_detected': False,
                 })
         
-        elif sensor_type == 6:  # On/Off Switch
-            if len(payload) >= 1:
-                switch_state = payload[0]
+        elif sensor_type == 3:  # DEVICE_TYPE_TWO_WAY_SWITCH
+            if len(payload) >= 4:
+                event_counter = struct.unpack('<I', payload[0:3] + b'\x00')[0]
+                sensor_event = payload[3]
                 
                 sensor_data.update({
-                    'switch_on': switch_state == 1,  # Assuming 1 means switch on
-                    'switch_state': switch_state,
+                    'event_counter': event_counter,
+                    'sensor_event': sensor_event,
+                    'switch_on': sensor_event == 3,  # EVENT_TYPE_BUTTON_ON = 3
+                })
+            else:
+                sensor_data.update({
+                    'event_counter': 0,
+                    'sensor_event': 0,
+                    'switch_on': False,
                 })
         
-        elif sensor_type == 7:  # Light Switch
-            if len(payload) >= 2:
-                switch_state = payload[0]
-                brightness = payload[1]
+        elif sensor_type in [0, 1]:  # DEVICE_TYPE_LEGACY, DEVICE_TYPE_BUTTON
+            if len(payload) >= 4:
+                event_counter = struct.unpack('<I', payload[0:3] + b'\x00')[0]
+                sensor_event = payload[3]
                 
                 sensor_data.update({
-                    'switch_on': switch_state == 1,
-                    'switch_state': switch_state,
-                    'brightness': brightness,
+                    'event_counter': event_counter,
+                    'sensor_event': sensor_event,
+                    'button_pressed': sensor_event == 0,  # EVENT_TYPE_BUTTON_PRESS = 0
                 })
-        
-        elif sensor_type == 8:  # Door Switch
-            if len(payload) >= 1:
-                door_state = payload[0]
-                
+            else:
                 sensor_data.update({
-                    'door_open': door_state == 1,  # Assuming 1 means door open
-                    'door_state': door_state,
-                })
-        
-        elif sensor_type == 9:  # Toggle Switch
-            if len(payload) >= 1:
-                toggle_state = payload[0]
-                
-                sensor_data.update({
-                    'switch_on': toggle_state == 1,
-                    'switch_state': toggle_state,
+                    'event_counter': 0,
+                    'sensor_event': 0,
+                    'button_pressed': False,
                 })
         
         return sensor_data
