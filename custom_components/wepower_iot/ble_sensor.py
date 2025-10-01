@@ -63,22 +63,49 @@ async def async_setup_entry(
     
     _LOGGER.info("BLE coordinator found for entry %s, creating sensor entities", config_entry.entry_id)
     
-    # Create sensor entities based on device type
+    # Create entities based on device type
     entities = []
     
-    # Create a generic sensor entity that will adapt based on the device type
-    sensor_entity = WePowerIoTBLESensor(coordinator, config_entry)
-    entities.append(sensor_entity)
+    # Get device type from config to determine which entities to create
+    device_type = config_entry.data.get("device_name", "unknown")
+    sensor_type = config_entry.data.get("sensor_type", 4)
     
-    # Also create binary sensor entities
-    from .ble_binary_sensor import WePowerIoTBLEBinarySensor
-    binary_sensor_entity = WePowerIoTBLEBinarySensor(coordinator, config_entry)
-    entities.append(binary_sensor_entity)
+    _LOGGER.info("Creating entities for device type: %s, sensor_type: %d", device_type, sensor_type)
     
-    # Also create switch entities for switch devices
-    from .ble_switch import WePowerIoTBLESwitch
-    switch_entity = WePowerIoTBLESwitch(coordinator, config_entry)
-    entities.append(switch_entity)
+    # Create entities based on device type
+    if device_type in ["leak_sensor"] or sensor_type == 4:
+        # Leak sensor - create binary sensor only
+        from .ble_binary_sensor import WePowerIoTBLEBinarySensor
+        binary_sensor_entity = WePowerIoTBLEBinarySensor(coordinator, config_entry)
+        entities.append(binary_sensor_entity)
+        _LOGGER.info("Created binary sensor entity for leak sensor")
+        
+    elif device_type in ["on_off_switch", "light_switch", "door_switch", "toggle_switch"] or sensor_type in [6, 7, 8, 9]:
+        # Switch devices - create switch entity only
+        from .ble_switch import WePowerIoTBLESwitch
+        switch_entity = WePowerIoTBLESwitch(coordinator, config_entry)
+        entities.append(switch_entity)
+        _LOGGER.info("Created switch entity for switch device")
+        
+    elif device_type in ["temperature_sensor", "humidity_sensor", "pressure_sensor", "vibration_sensor"] or sensor_type in [1, 2, 3, 5]:
+        # Regular sensors - create sensor entity only
+        sensor_entity = WePowerIoTBLESensor(coordinator, config_entry)
+        entities.append(sensor_entity)
+        _LOGGER.info("Created sensor entity for sensor device")
+        
+    else:
+        # Unknown device type - create all entities (fallback)
+        _LOGGER.warning("Unknown device type %s, creating all entity types", device_type)
+        sensor_entity = WePowerIoTBLESensor(coordinator, config_entry)
+        entities.append(sensor_entity)
+        
+        from .ble_binary_sensor import WePowerIoTBLEBinarySensor
+        binary_sensor_entity = WePowerIoTBLEBinarySensor(coordinator, config_entry)
+        entities.append(binary_sensor_entity)
+        
+        from .ble_switch import WePowerIoTBLESwitch
+        switch_entity = WePowerIoTBLESwitch(coordinator, config_entry)
+        entities.append(switch_entity)
     
     if entities:
         async_add_entities(entities)
