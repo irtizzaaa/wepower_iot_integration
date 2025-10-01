@@ -44,16 +44,17 @@ class WePowerIoTBluetoothProcessorCoordinator(
     ) -> None:
         """Initialize the WePower IoT Bluetooth processor coordinator."""
         self._entry = entry
-        # Get the MAC address from the config data
-        address = entry.data.get(CONF_ADDRESS)
+        # Always check config data first for real MAC address
+        real_address = entry.data.get(CONF_ADDRESS)
         _LOGGER.info("🔍 Config data: %s", entry.data)
         _LOGGER.info("🔍 Unique ID: %s", entry.unique_id)
-        _LOGGER.info("🔍 Address from config: %s", address)
+        _LOGGER.info("🔍 Address from config: %s", real_address)
         
-        # If we have a placeholder MAC, we need to discover the real device
-        if not address or address == "00:00:00:00:00:00":
-            _LOGGER.warning("🔍 Placeholder MAC address detected, will discover real device")
-            # Use a temporary identifier for now
+        # Use real MAC address if available, otherwise use discovery identifier
+        if real_address and real_address != "00:00:00:00:00:00":
+            address = real_address.upper()
+            _LOGGER.info("🎯 Using real MAC address: %s", address)
+        else:
             address = f"wepower_discovery_{entry.entry_id}"
             _LOGGER.info("🔍 Using discovery identifier: %s", address)
         
@@ -72,21 +73,13 @@ class WePowerIoTBluetoothProcessorCoordinator(
         """Initialize the coordinator."""
         _LOGGER.info("🔍 Coordinator async_init with address: %s", self.address)
         
-        # Check if we have a real MAC address in the config data
-        real_address = self._entry.data.get(CONF_ADDRESS)
-        if real_address and real_address != "00:00:00:00:00:00":
-            _LOGGER.info("🎯 Found real MAC address in config: %s", real_address)
-            # Update our address to use the real MAC
-            self.address = real_address.upper()
-            _LOGGER.info("🔄 Updated coordinator address to: %s", self.address)
-        
-        # Check if we have a real MAC address or if we need to discover devices
-        if self.address == "00:00:00:00:00:00" or not self.address or self.address.startswith("wepower_discovery_"):
-            _LOGGER.warning("No real MAC address provided (%s), coordinator will wait for device discovery", self.address)
-            # Try to discover WePower devices
+        # If we're using discovery identifier, try to discover devices
+        if self.address.startswith("wepower_discovery_"):
+            _LOGGER.warning("Using discovery identifier, will discover real device")
             await self._discover_and_update_address()
             return
         
+        # Try to connect to the real MAC address
         if not (service_info := async_last_service_info(self.hass, self.address)):
             raise ConfigEntryNotReady(
                 f"No advertisement found for WePower IoT device {self.address}"
