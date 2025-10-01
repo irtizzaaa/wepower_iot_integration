@@ -338,4 +338,11 @@ class WePowerIoTBluetoothProcessorCoordinator(
             return True
         
         return False
+    
+    async def async_shutdown(self) -> None:
+        """Shutdown the coordinator."""
+        _LOGGER.info("🔴 Shutting down WePower IoT BLE coordinator")
+        # Clean up any resources if needed
+        self.data = {}
+        self.last_update_success = False
 
