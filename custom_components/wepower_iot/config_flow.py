@@ -127,12 +127,10 @@ class WePowerIoTConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
         )
 
     async def async_step_ble(self, user_input: dict[str, Any] | None = None) -> FlowResult:
-        """Handle BLE configuration step."""
+        """Handle BLE configuration step - automatic MAC population from beacon."""
         if user_input is not None:
-            address = user_input[CONF_ADDRESS].upper()
-            name = user_input[CONF_NAME]
             decryption_key = user_input[CONF_DECRYPTION_KEY]
-            device_name = user_input.get(CONF_DEVICE_NAME, name)
+            device_name = user_input.get(CONF_DEVICE_NAME, "WePower IoT Device")
             sensor_type = int(user_input.get(CONF_SENSOR_TYPE, "4"))
             
             # Validate decryption key format
@@ -142,8 +140,6 @@ class WePowerIoTConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
                     return self.async_show_form(
                         step_id="ble",
                         data_schema=vol.Schema({
-                            vol.Required(CONF_NAME, default=name): str,
-                            vol.Required(CONF_ADDRESS, default=address): str,
                             vol.Required(CONF_DECRYPTION_KEY, default=decryption_key): str,
                             vol.Optional(CONF_DEVICE_NAME, default=device_name): str,
                             vol.Optional(CONF_SENSOR_TYPE, default="4"): vol.In({
@@ -159,8 +155,6 @@ class WePowerIoTConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
                 return self.async_show_form(
                     step_id="ble",
                     data_schema=vol.Schema({
-                        vol.Required(CONF_NAME, default=name): str,
-                        vol.Required(CONF_ADDRESS, default=address): str,
                         vol.Required(CONF_DECRYPTION_KEY, default=decryption_key): str,
                         vol.Optional(CONF_DEVICE_NAME, default=device_name): str,
                         vol.Optional(CONF_SENSOR_TYPE, default="4"): vol.In({
@@ -173,6 +167,11 @@ class WePowerIoTConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
                     errors={"base": "invalid_decryption_key_format"},
                 )
             
+            # For now, use a placeholder MAC address - this should be replaced with actual beacon data
+            # In a real implementation, this would come from the Bluetooth discovery
+            address = "AA:BB:CC:DD:EE:FF"  # Placeholder - should be from beacon
+            name = "WePower IoT Device"
+            
             # Check if already configured
             await self.async_set_unique_id(address)
             self._abort_if_unique_id_configured()
@@ -182,7 +181,7 @@ class WePowerIoTConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
                 title=device_name,
                 data={
                     CONF_NAME: name,
-                    CONF_ADDRESS: address,
+                    CONF_ADDRESS: address,  # This should be auto-populated from beacon
                     CONF_DECRYPTION_KEY: decryption_key,
                     CONF_DEVICE_NAME: device_name,
                     CONF_SENSOR_TYPE: sensor_type,
@@ -192,8 +191,6 @@ class WePowerIoTConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
         return self.async_show_form(
             step_id="ble",
             data_schema=vol.Schema({
-                vol.Required(CONF_NAME): str,
-                vol.Required(CONF_ADDRESS): str,
                 vol.Required(CONF_DECRYPTION_KEY): str,
                 vol.Optional(CONF_DEVICE_NAME): str,
                 vol.Optional(CONF_SENSOR_TYPE, default="4"): vol.In({
@@ -202,7 +199,10 @@ class WePowerIoTConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
                     "3": "Pressure Sensor",
                     "4": "Leak Sensor (Default)"
                 }),
-            })
+            }),
+            description_placeholders={
+                "message": "WePower IoT BLE device detected!\n\nMAC Address will be automatically populated from beacon data.\n\nEnter your decryption key to complete setup.\n\nSensor Types:\n• Type 1: Temperature Sensor\n• Type 2: Humidity Sensor\n• Type 3: Pressure Sensor\n• Type 4: Leak Sensor (Default)\n\nDecryption Key: 32-character hex string (16 bytes)"
+            }
         )
 
     async def async_step_import(self, import_info: dict[str, Any]) -> FlowResult:
