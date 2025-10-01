@@ -307,7 +307,7 @@ class WePowerIoTBluetoothProcessorCoordinator(
         """Discover WePower devices and update the address if found."""
         try:
             _LOGGER.info("🔍 Discovering WePower devices...")
-            discovered_devices = await async_discovered_service_info(self.hass)
+            discovered_devices = async_discovered_service_info(self.hass)
             
             for device in discovered_devices:
                 if self._is_wepower_device(device):
