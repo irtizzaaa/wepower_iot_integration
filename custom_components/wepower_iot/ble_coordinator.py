@@ -314,6 +314,10 @@ class WePowerIoTBluetoothProcessorCoordinator(
                     new_data[CONF_ADDRESS] = device.address.upper()
                     self.hass.config_entries.async_update_entry(self._entry, data=new_data)
                     _LOGGER.info("✅ Updated config entry with real MAC address: %s", device.address)
+                    
+                    # Restart the integration to use the new MAC address
+                    _LOGGER.info("🔄 Restarting integration to use new MAC address...")
+                    await self.hass.config_entries.async_reload(self._entry.entry_id)
                     break
             else:
                 _LOGGER.warning("⚠️ No WePower devices found during discovery")
