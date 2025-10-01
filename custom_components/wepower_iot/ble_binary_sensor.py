@@ -276,6 +276,17 @@ class WePowerIoTBLEBinarySensor(BinarySensorEntity):
 
     def _get_professional_device_id(self) -> str:
         """Generate a professional device identifier from MAC address."""
+        # Handle test/discovery addresses
+        if self.address.startswith("wepower_") or self.address == "00:00:00:00:00:00":
+            # For test devices, use entry ID to generate a consistent ID
+            entry_id = self.config_entry.entry_id
+            # Extract numbers from entry ID or use a hash
+            import hashlib
+            hash_obj = hashlib.md5(entry_id.encode())
+            hash_hex = hash_obj.hexdigest()
+            device_number = int(hash_hex[:3], 16) % 1000
+            return f"Test-{device_number:03d}"
+        
         # Remove colons and get last 6 characters
         clean_address = self.address.replace(":", "").upper()
         last_6 = clean_address[-6:]
