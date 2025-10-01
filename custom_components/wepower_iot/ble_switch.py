@@ -284,17 +284,17 @@ class WePowerIoTBLESwitch(SwitchEntity):
     async def async_turn_on(self, **kwargs: Any) -> None:
         """Turn the switch on."""
         _LOGGER.info("🔌 TURNING ON SWITCH: %s", self.address)
-        # TODO: Implement actual switch control via BLE commands
-        # For now, just update the state
-        self._attr_is_on = True
+        # Note: Switch control is read-only for now
+        # The switch state is determined by the device's sensor_event data
+        _LOGGER.warning("Switch control is read-only. State is determined by device sensor_event data.")
         self.async_write_ha_state()
 
     async def async_turn_off(self, **kwargs: Any) -> None:
         """Turn the switch off."""
         _LOGGER.info("🔌 TURNING OFF SWITCH: %s", self.address)
-        # TODO: Implement actual switch control via BLE commands
-        # For now, just update the state
-        self._attr_is_on = False
+        # Note: Switch control is read-only for now
+        # The switch state is determined by the device's sensor_event data
+        _LOGGER.warning("Switch control is read-only. State is determined by device sensor_event data.")
         self.async_write_ha_state()
 
     async def async_update(self) -> None:
