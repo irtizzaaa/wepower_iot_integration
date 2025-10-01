@@ -194,49 +194,40 @@ class WePowerIoTBLEBinarySensor(BinarySensorEntity):
                      self.address, self._attr_available, self._attr_is_on, True, self.coordinator.available)
         
     def _set_sensor_properties(self) -> None:
-        """Set binary sensor properties based on device type."""
+        """Set binary sensor properties based on device type (matching device_type_t enum)."""
         device_type = self._device_type.lower()
         
-        # Get short address for display
-        short_address = self.address.replace(":", "")[-6:].upper()
-        
-        # Set properties based on device type
-        if "leak" in device_type:
+        # Set properties based on device type (matching device_type_t enum)
+        if device_type == "leak_sensor":
+            # DEVICE_TYPE_LEAK_SENSOR = 4 - moisture device class
             self._attr_device_class = BinarySensorDeviceClass.MOISTURE
-            self._attr_name = f"WePower Leak Detection {self._get_professional_device_id()}"
+            self._attr_name = f"WePower Leak Sensor {self._get_professional_device_id()}"
             self._attr_icon = "mdi:water"
             
-        elif "temperature" in device_type:
-            self._attr_device_class = BinarySensorDeviceClass.COLD
-            self._attr_name = f"WePower Temperature Alert {self._get_professional_device_id()}"
-            self._attr_icon = "mdi:thermometer-alert"
-            
-        elif "humidity" in device_type:
-            self._attr_device_class = BinarySensorDeviceClass.MOISTURE
-            self._attr_name = f"WePower Humidity Alert {self._get_professional_device_id()}"
-            self._attr_icon = "mdi:water-alert"
-            
-        elif "pressure" in device_type:
-            self._attr_device_class = BinarySensorDeviceClass.PROBLEM
-            self._attr_name = f"WePower Pressure Alert {self._get_professional_device_id()}"
-            self._attr_icon = "mdi:gauge-alert"
-            
-        elif "vibration" in device_type:
+        elif device_type == "vibration_sensor":
+            # DEVICE_TYPE_VIBRATION_MONITOR = 2 - vibration device class
             self._attr_device_class = BinarySensorDeviceClass.VIBRATION
-            self._attr_name = f"WePower Vibration Alert {self._get_professional_device_id()}"
+            self._attr_name = f"WePower Vibration Monitor {self._get_professional_device_id()}"
             self._attr_icon = "mdi:vibrate"
             
-        elif "door" in device_type:
-            self._attr_device_class = BinarySensorDeviceClass.DOOR
-            self._attr_name = f"WePower Door Status {self._get_professional_device_id()}"
-            self._attr_icon = "mdi:door"
+        elif device_type == "two_way_switch":
+            # DEVICE_TYPE_TWO_WAY_SWITCH = 3 - opening device class (on/off)
+            self._attr_device_class = BinarySensorDeviceClass.OPENING
+            self._attr_name = f"WePower Two-Way Switch {self._get_professional_device_id()}"
+            self._attr_icon = "mdi:toggle-switch"
             
-        elif "switch" in device_type:
-            # Skip switch devices - they should be handled by switch platform
-            return
+        elif device_type in ["button", "legacy"]:
+            # DEVICE_TYPE_BUTTON = 1, DEVICE_TYPE_LEGACY = 0 - problem device class
+            self._attr_device_class = BinarySensorDeviceClass.PROBLEM
+            if device_type == "button":
+                self._attr_name = f"WePower Button {self._get_professional_device_id()}"
+                self._attr_icon = "mdi:gesture-tap-button"
+            else:  # legacy
+                self._attr_name = f"WePower Legacy Device {self._get_professional_device_id()}"
+                self._attr_icon = "mdi:chip"
             
         else:
-            # Generic binary sensor
+            # Unknown device type - generic binary sensor
             self._attr_device_class = BinarySensorDeviceClass.PROBLEM
             self._attr_name = f"WePower IoT Alert {self._get_professional_device_id()}"
             self._attr_icon = "mdi:alert"
@@ -245,21 +236,27 @@ class WePowerIoTBLEBinarySensor(BinarySensorEntity):
         """Update device info with proper name and model."""
         device_type = self._device_type.lower()
         
-        # Set model based on device type
+        # Set model based on device type (matching device_type_t enum)
         model_map = {
-            "leak_sensor": "Leak Sensor",
-            "temperature_sensor": "Temperature Sensor",
-            "humidity_sensor": "Humidity Sensor",
-            "pressure_sensor": "Pressure Sensor",
-            "vibration_sensor": "Vibration Sensor",
-            "on_off_switch": "On/Off Switch",
-            "light_switch": "Light Switch",
-            "door_switch": "Door Switch",
-            "toggle_switch": "Toggle Switch",
+            "legacy": "Legacy Device",           # DEVICE_TYPE_LEGACY = 0
+            "button": "Button",                  # DEVICE_TYPE_BUTTON = 1  
+            "vibration_sensor": "Vibration Monitor", # DEVICE_TYPE_VIBRATION_MONITOR = 2
+            "two_way_switch": "Two-Way Switch",  # DEVICE_TYPE_TWO_WAY_SWITCH = 3
+            "leak_sensor": "Leak Sensor",        # DEVICE_TYPE_LEAK_SENSOR = 4
             "unknown_device": "IoT Device"
         }
         
         model = model_map.get(device_type, "IoT Sensor")
+        
+        # Set suggested area based on device type
+        area_map = {
+            "leak_sensor": "Kitchen",
+            "vibration_sensor": "Garage", 
+            "button": "Living Room",
+            "two_way_switch": "Bedroom",
+            "legacy": "Office"
+        }
+        suggested_area = area_map.get(device_type, "Home")
         
         # Update device info
         self._attr_device_info = DeviceInfo(
@@ -268,6 +265,7 @@ class WePowerIoTBLEBinarySensor(BinarySensorEntity):
             manufacturer="WePower",
             model=model,
             sw_version="1.0.0",
+            suggested_area=suggested_area,
         )
 
     def _get_professional_device_id(self) -> str:
@@ -289,28 +287,28 @@ class WePowerIoTBLEBinarySensor(BinarySensorEntity):
         _LOGGER.info("📊 SENSOR DATA: %s | Sensor data: %s", self.address, sensor_data)
         
         if "leak_detected" in sensor_data:
-            # For leak sensors, return True if leak detected, False if not
+            # DEVICE_TYPE_LEAK_SENSOR = 4 - EVENT_TYPE_LEAK_DETECTED = 4
             self._attr_is_on = sensor_data["leak_detected"]
             _LOGGER.info("💧 LEAK BINARY SENSOR: %s | Leak detected: %s | Value: %s", 
                         self.address, sensor_data["leak_detected"], self._attr_is_on)
             
         elif "vibration_detected" in sensor_data:
-            # For vibration sensors, return True if vibration detected
+            # DEVICE_TYPE_VIBRATION_MONITOR = 2 - EVENT_TYPE_VIBRATION = 1
             self._attr_is_on = sensor_data["vibration_detected"]
             _LOGGER.info("📳 VIBRATION BINARY SENSOR: %s | Vibration detected: %s | Value: %s", 
                         self.address, sensor_data["vibration_detected"], self._attr_is_on)
             
-        elif "door_open" in sensor_data:
-            # For door switches, return True if door is open
-            self._attr_is_on = sensor_data["door_open"]
-            _LOGGER.info("🚪 DOOR BINARY SENSOR: %s | Door open: %s | Value: %s", 
-                        self.address, sensor_data["door_open"], self._attr_is_on)
-            
         elif "switch_on" in sensor_data:
-            # For switches, return True if switch is on
+            # DEVICE_TYPE_TWO_WAY_SWITCH = 3 - EVENT_TYPE_BUTTON_ON = 3
             self._attr_is_on = sensor_data["switch_on"]
             _LOGGER.info("🔌 SWITCH BINARY SENSOR: %s | Switch on: %s | Value: %s", 
                         self.address, sensor_data["switch_on"], self._attr_is_on)
+            
+        elif "button_pressed" in sensor_data:
+            # DEVICE_TYPE_BUTTON = 1, DEVICE_TYPE_LEGACY = 0 - EVENT_TYPE_BUTTON_PRESS = 0
+            self._attr_is_on = sensor_data["button_pressed"]
+            _LOGGER.info("🔘 BUTTON BINARY SENSOR: %s | Button pressed: %s | Value: %s", 
+                        self.address, sensor_data["button_pressed"], self._attr_is_on)
             
         elif "sensor_event" in sensor_data:
             # For other sensors, use sensor_event as binary state
