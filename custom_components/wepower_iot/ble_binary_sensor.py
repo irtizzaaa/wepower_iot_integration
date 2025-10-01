@@ -66,17 +66,16 @@ class WePowerIoTBLEBinarySensor(BinarySensorEntity):
         """Initialize the BLE binary sensor."""
         self.coordinator = coordinator
         self.config_entry = config_entry
-        # Get the current MAC address from config data (may have been updated by discovery)
-        self.address = config_entry.data.get(CONF_ADDRESS, config_entry.unique_id)
+        # Don't store address statically - get it dynamically from config data
         
         # Set up basic entity properties
-        self._attr_name = config_entry.data.get("name", f"WePower IoT {self.address}")
-        self._attr_unique_id = f"{DOMAIN}_{self.address}_binary"
+        self._attr_name = config_entry.data.get("name", "WePower IoT Device")
+        self._attr_unique_id = f"{DOMAIN}_{config_entry.entry_id}_binary"
         self._attr_should_poll = False
         
         # Set device info
         self._attr_device_info = DeviceInfo(
-            identifiers={(DOMAIN, self.address)},
+            identifiers={(DOMAIN, config_entry.entry_id)},
             name=self._attr_name,
             manufacturer="WePower",
             model="BLE Sensor",
@@ -90,6 +89,11 @@ class WePowerIoTBLEBinarySensor(BinarySensorEntity):
         
         # Device type will be determined from coordinator data
         self._device_type = "unknown"
+        
+    @property
+    def address(self) -> str:
+        """Get the current MAC address from config data."""
+        return self.config_entry.data.get(CONF_ADDRESS, self.config_entry.unique_id)
         
     @property
     def available(self) -> bool:
