@@ -14,6 +14,7 @@ from homeassistant.components.bluetooth import (
     BluetoothChange,
     async_ble_device_from_address,
     async_last_service_info,
+    async_discovered_service_info,
 )
 from homeassistant.components.bluetooth.passive_update_coordinator import (
     PassiveBluetoothDataUpdateCoordinator,
@@ -77,6 +78,8 @@ class WePowerIoTBluetoothProcessorCoordinator(
         # Check if we have a real MAC address or if we need to discover devices
         if self.address == "00:00:00:00:00:00" or not self.address or self.address.startswith("wepower_temp_"):
             _LOGGER.warning("No real MAC address provided (%s), coordinator will wait for device discovery", self.address)
+            # Try to discover WePower devices
+            await self._discover_and_update_address()
             return
         
         if not (service_info := async_last_service_info(self.hass, self.address)):
@@ -299,4 +302,40 @@ class WePowerIoTBluetoothProcessorCoordinator(
         else:
             # No data for a while, mark as potentially unavailable
             self.last_update_success = False
+    
+    async def _discover_and_update_address(self) -> None:
+        """Discover WePower devices and update the address if found."""
+        try:
+            _LOGGER.info("🔍 Discovering WePower devices...")
+            discovered_devices = await async_discovered_service_info(self.hass)
+            
+            for device in discovered_devices:
+                if self._is_wepower_device(device):
+                    _LOGGER.info("🎯 Found WePower device: %s (%s)", device.name, device.address)
+                    # Update the config entry with the real MAC address
+                    new_data = self._entry.data.copy()
+                    new_data[CONF_ADDRESS] = device.address.upper()
+                    self.hass.config_entries.async_update_entry(self._entry, data=new_data)
+                    _LOGGER.info("✅ Updated config entry with real MAC address: %s", device.address)
+                    break
+            else:
+                _LOGGER.warning("⚠️ No WePower devices found during discovery")
+                
+        except Exception as e:
+            _LOGGER.error("🔴 Discovery error: %s", e)
+    
+    def _is_wepower_device(self, discovery_info: BluetoothServiceInfo) -> bool:
+        """Check if this is a WePower IoT device."""
+        # Check manufacturer data for WePower Company ID (22352)
+        if discovery_info.manufacturer_data:
+            for manufacturer_id, data in discovery_info.manufacturer_data.items():
+                if manufacturer_id == BLE_COMPANY_ID and len(data) >= 20:
+                    return True
+        
+        # Check name patterns as fallback
+        name = discovery_info.name or ""
+        if any(pattern in name.upper() for pattern in ["WEPOWER", "WP"]):
+            return True
+        
+        return False
 
