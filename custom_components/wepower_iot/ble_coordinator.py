@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import logging
+import asyncio
 from datetime import datetime, timedelta
 from typing import Any
 import struct
@@ -29,7 +30,7 @@ from .packet_parser import parse_wepower_packet
 
 _LOGGER = logging.getLogger(__name__)
 
-FALLBACK_POLL_INTERVAL = timedelta(seconds=60)
+FALLBACK_POLL_INTERVAL = timedelta(seconds=10)
 
 
 class WePowerIoTBluetoothProcessorCoordinator(
@@ -63,7 +64,7 @@ class WePowerIoTBluetoothProcessorCoordinator(
             hass=hass,
             logger=_LOGGER,
             address=address,
-            mode=BluetoothScanningMode.ACTIVE,
+            mode=BluetoothScanningMode.PASSIVE,
             connectable=False,
         )
         self.data = {}
@@ -307,7 +308,9 @@ class WePowerIoTBluetoothProcessorCoordinator(
             _LOGGER.info("🔍 Discovering WePower devices...")
             discovered_devices = async_discovered_service_info(self.hass)
             
+            _LOGGER.info("🔍 Found %d total Bluetooth devices", len(discovered_devices))
             for device in discovered_devices:
+                _LOGGER.info("🔍 Checking device: %s (%s)", device.name, device.address)
                 if self._is_wepower_device(device):
                     _LOGGER.info("🎯 Found WePower device: %s (%s)", device.name, device.address)
                     # Update the config entry with the real MAC address
@@ -321,21 +324,36 @@ class WePowerIoTBluetoothProcessorCoordinator(
                     break
             else:
                 _LOGGER.warning("⚠️ No WePower devices found during discovery")
+                # Schedule another discovery attempt in 5 seconds
+                self.hass.async_create_task(self._schedule_next_discovery())
                 
         except Exception as e:
             _LOGGER.error("🔴 Discovery error: %s", e)
+            # Schedule another discovery attempt in 5 seconds
+            self.hass.async_create_task(self._schedule_next_discovery())
+    
+    async def _schedule_next_discovery(self) -> None:
+        """Schedule the next discovery attempt."""
+        await asyncio.sleep(5)  # Wait 5 seconds
+        if self.address.startswith("wepower_discovery_"):
+            _LOGGER.info("🔄 Retrying discovery...")
+            await self._discover_and_update_address()
     
     def _is_wepower_device(self, discovery_info: BluetoothServiceInfo) -> bool:
         """Check if this is a WePower IoT device."""
         # Check manufacturer data for WePower Company ID (22352)
         if discovery_info.manufacturer_data:
             for manufacturer_id, data in discovery_info.manufacturer_data.items():
+                _LOGGER.info("🔍 Checking manufacturer data: Company ID %d, Data length: %d", manufacturer_id, len(data))
                 if manufacturer_id == BLE_COMPANY_ID and len(data) >= 20:
+                    _LOGGER.info("✅ Found WePower device by manufacturer data")
                     return True
         
         # Check name patterns as fallback
         name = discovery_info.name or ""
+        _LOGGER.info("🔍 Checking device name: '%s'", name)
         if any(pattern in name.upper() for pattern in ["WEPOWER", "WP"]):
+            _LOGGER.info("✅ Found WePower device by name pattern")
             return True
         
         return False
