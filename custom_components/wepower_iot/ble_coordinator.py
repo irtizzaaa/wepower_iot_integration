@@ -23,7 +23,7 @@ from homeassistant.core import HomeAssistant, callback
 from homeassistant.exceptions import ConfigEntryNotReady
 from homeassistant.helpers.event import async_track_time_interval
 
-from .const import DOMAIN, BLE_COMPANY_ID, CONF_DECRYPTION_KEY
+from .const import DOMAIN, BLE_COMPANY_ID, CONF_DECRYPTION_KEY, CONF_ADDRESS
 from .packet_parser import parse_wepower_packet
 
 _LOGGER = logging.getLogger(__name__)
@@ -43,7 +43,11 @@ class WePowerIoTBluetoothProcessorCoordinator(
     ) -> None:
         """Initialize the WePower IoT Bluetooth processor coordinator."""
         self._entry = entry
-        address = entry.unique_id
+        # Get the MAC address from the config data
+        address = entry.data.get(CONF_ADDRESS)
+        if not address or address == "00:00:00:00:00:00":
+            # If no real address, use the unique_id as fallback
+            address = entry.unique_id
         assert address is not None
         super().__init__(
             hass=hass,
@@ -57,6 +61,11 @@ class WePowerIoTBluetoothProcessorCoordinator(
 
     async def async_init(self) -> None:
         """Initialize the coordinator."""
+        # Check if we have a real MAC address or if we need to discover devices
+        if self.address == "00:00:00:00:00:00" or not self.address:
+            _LOGGER.warning("No real MAC address provided, coordinator will wait for device discovery")
+            return
+        
         if not (service_info := async_last_service_info(self.hass, self.address)):
             raise ConfigEntryNotReady(
                 f"No advertisement found for WePower IoT device {self.address}"
