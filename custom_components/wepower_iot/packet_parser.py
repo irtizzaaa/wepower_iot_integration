@@ -185,7 +185,7 @@ class WePowerPacket:
                 sensor_data.update({
                     'event_counter': event_counter,
                     'sensor_event': sensor_event,
-                    'leak_detected': sensor_event == 1,  # Assuming 1 means leak detected
+                    'leak_detected': sensor_event > 0,  # Any non-zero sensor_event means leak detected
                 })
         
         elif sensor_type == 5:  # Vibration sensor
