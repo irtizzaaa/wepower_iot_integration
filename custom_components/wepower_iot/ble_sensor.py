@@ -24,7 +24,7 @@ from homeassistant.const import (
     CONCENTRATION_PARTS_PER_MILLION,
 )
 
-from .const import DOMAIN
+from .const import DOMAIN, CONF_ADDRESS
 from .ble_coordinator import WePowerIoTBluetoothProcessorCoordinator
 
 _LOGGER = logging.getLogger(__name__)
@@ -37,10 +37,18 @@ async def async_setup_entry(
 ) -> None:
     """Set up WePower IoT BLE sensors from a config entry."""
     _LOGGER.info("Setting up BLE sensor for entry %s", config_entry.entry_id)
-    address = config_entry.unique_id
-    if not address:
-        _LOGGER.error("No address found in config entry")
+    
+    # Get address from config data or unique_id
+    address = config_entry.data.get(CONF_ADDRESS)
+    if not address or address == "00:00:00:00:00:00":
+        address = config_entry.unique_id
+    
+    # If still no address, skip BLE sensor setup
+    if not address or address.startswith("wepower_temp_"):
+        _LOGGER.info("No real BLE device address found, skipping BLE sensor setup for entry %s", config_entry.entry_id)
         return
+    
+    _LOGGER.info("BLE device address found: %s", address)
 
     # Get the BLE coordinator from runtime_data
     coordinator = config_entry.runtime_data
