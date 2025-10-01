@@ -33,7 +33,7 @@
   "iot_class": "local_push",
   "loggers": ["wepower_iot_ble"],
   "requirements": ["cryptography>=3.0.0"],
-  "version": "1.0.75",
+  "version": "1.0.76",
   "brand": {
     "icon": "mdi:home"
   }
