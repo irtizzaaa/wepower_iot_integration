@@ -315,6 +315,9 @@ class WePowerIoTBluetoothProcessorCoordinator(
                     new_data[CONF_ADDRESS] = device.address.upper()
                     self.hass.config_entries.async_update_entry(self._entry, data=new_data)
                     _LOGGER.info("✅ Updated config entry with real MAC address: %s", device.address)
+                    
+                    # Update coordinator address dynamically
+                    await self._update_coordinator_address(device.address.upper())
                     break
             else:
                 _LOGGER.warning("⚠️ No WePower devices found during discovery")
@@ -336,6 +339,29 @@ class WePowerIoTBluetoothProcessorCoordinator(
             return True
         
         return False
+    
+    async def _update_coordinator_address(self, new_address: str) -> None:
+        """Update the coordinator's address dynamically."""
+        try:
+            _LOGGER.info("🔄 Updating coordinator address from %s to %s", self.address, new_address)
+            
+            # Update the address
+            self.address = new_address
+            
+            # Try to connect to the new address
+            if service_info := async_last_service_info(self.hass, self.address):
+                _LOGGER.info("✅ Successfully connected to device at %s", self.address)
+                # Process the advertisement data
+                parsed_data = self._parse_advertisement_data(service_info)
+                self.data = parsed_data
+                self.last_update_success = True
+                self.async_update_listeners()
+                _LOGGER.info("🎯 Device data updated: %s", parsed_data)
+            else:
+                _LOGGER.warning("⚠️ No advertisement found for device at %s", self.address)
+                
+        except Exception as e:
+            _LOGGER.error("🔴 Error updating coordinator address: %s", e)
     
     async def async_shutdown(self) -> None:
         """Shutdown the coordinator."""
