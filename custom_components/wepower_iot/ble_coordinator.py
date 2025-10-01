@@ -72,6 +72,14 @@ class WePowerIoTBluetoothProcessorCoordinator(
         """Initialize the coordinator."""
         _LOGGER.info("🔍 Coordinator async_init with address: %s", self.address)
         
+        # Check if we have a real MAC address in the config data
+        real_address = self._entry.data.get(CONF_ADDRESS)
+        if real_address and real_address != "00:00:00:00:00:00":
+            _LOGGER.info("🎯 Found real MAC address in config: %s", real_address)
+            # Update our address to use the real MAC
+            self.address = real_address.upper()
+            _LOGGER.info("🔄 Updated coordinator address to: %s", self.address)
+        
         # Check if we have a real MAC address or if we need to discover devices
         if self.address == "00:00:00:00:00:00" or not self.address or self.address.startswith("wepower_discovery_"):
             _LOGGER.warning("No real MAC address provided (%s), coordinator will wait for device discovery", self.address)
@@ -314,10 +322,6 @@ class WePowerIoTBluetoothProcessorCoordinator(
                     new_data[CONF_ADDRESS] = device.address.upper()
                     self.hass.config_entries.async_update_entry(self._entry, data=new_data)
                     _LOGGER.info("✅ Updated config entry with real MAC address: %s", device.address)
-                    
-                    # Restart the integration to use the new MAC address
-                    _LOGGER.info("🔄 Restarting integration to use new MAC address...")
-                    await self.hass.config_entries.async_reload(self._entry.entry_id)
                     break
             else:
                 _LOGGER.warning("⚠️ No WePower devices found during discovery")
