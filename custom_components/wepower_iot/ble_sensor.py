@@ -153,6 +153,9 @@ class WePowerIoTBLESensor(SensorEntity):
             sw_version="1.0.0",
         )
         
+        # Set custom icon using tplink_monitor branding for testing
+        self._attr_icon = "https://brands.home-assistant.io/tplink_monitor/icon.png"
+        
         # Initialize sensor properties
         self._attr_device_class = None
         self._attr_state_class = SensorStateClass.MEASUREMENT
@@ -224,8 +227,9 @@ class WePowerIoTBLESensor(SensorEntity):
     def _update_from_coordinator(self) -> None:
         """Update sensor state from coordinator data."""
         if not self.coordinator.data:
-            self._attr_available = False
-            _LOGGER.debug("BLE sensor %s: No coordinator data", self.address)
+            # For event-driven devices, stay available even without recent data
+            self._attr_available = True
+            _LOGGER.debug("BLE sensor %s: No coordinator data - normal for event-driven devices", self.address)
             return
             
         data = self.coordinator.data
@@ -277,30 +281,30 @@ class WePowerIoTBLESensor(SensorEntity):
             self._attr_device_class = SensorDeviceClass.TEMPERATURE
             self._attr_native_unit_of_measurement = UnitOfTemperature.CELSIUS
             self._attr_name = f"WePower Temperature Sensor {self._get_professional_device_id()}"
-            self._attr_icon = "mdi:thermometer"
+            self._attr_icon = "https://brands.home-assistant.io/tplink_monitor/icon.png"
             
         elif "humidity" in device_type:
             self._attr_device_class = SensorDeviceClass.HUMIDITY
             self._attr_native_unit_of_measurement = PERCENTAGE
             self._attr_name = f"WePower Humidity Sensor {self._get_professional_device_id()}"
-            self._attr_icon = "mdi:water-percent"
+            self._attr_icon = "https://brands.home-assistant.io/tplink_monitor/icon.png"
             
         elif "pressure" in device_type:
             self._attr_device_class = SensorDeviceClass.PRESSURE
             self._attr_native_unit_of_measurement = UnitOfPressure.HPA
             self._attr_name = f"WePower Pressure Sensor {self._get_professional_device_id()}"
-            self._attr_icon = "mdi:gauge"
+            self._attr_icon = "https://brands.home-assistant.io/tplink_monitor/icon.png"
             
         elif "vibration" in device_type:
             self._attr_device_class = SensorDeviceClass.VIBRATION
             self._attr_native_unit_of_measurement = "m/s²"
             self._attr_name = f"WePower Vibration Sensor {self._get_professional_device_id()}"
-            self._attr_icon = "mdi:vibrate"
+            self._attr_icon = "https://brands.home-assistant.io/tplink_monitor/icon.png"
             
         else:
             # Generic sensor
             self._attr_name = f"WePower IoT Sensor {self._get_professional_device_id()}"
-            self._attr_icon = "mdi:chip"
+            self._attr_icon = "https://brands.home-assistant.io/tplink_monitor/icon.png"
 
     def _update_device_info(self) -> None:
         """Update device info with proper name and model."""
