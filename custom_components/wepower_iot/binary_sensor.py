@@ -71,10 +71,11 @@ class WePowerIoTBLESensor(BinarySensorEntity):
         self._attr_device_info = DeviceInfo(
             identifiers={(DOMAIN, "ble_dongle")},
             name="WePower IoT BLE Dongle",
-            manufacturer="WePower",
+            manufacturer="WePower Technologies",
             model="BLE Dongle",
             sw_version="1.0.0",
             configuration_url=f"https://github.com/wepower/wepower-iot-homeassistant",
+            image="/local/wepower_iot/ble_dongle.png",
         )
         
         # Set custom icon for BLE dongle
@@ -145,10 +146,11 @@ class WePowerIoTZigbeeSensor(BinarySensorEntity):
         self._attr_device_info = DeviceInfo(
             identifiers={(DOMAIN, "zigbee_dongle")},
             name="WePower IoT Zigbee Dongle",
-            manufacturer="WePower",
+            manufacturer="WePower Technologies",
             model="Zigbee Dongle",
             sw_version="1.0.0",
             configuration_url=f"https://github.com/wepower/wepower-iot-homeassistant",
+            image="/local/wepower_iot/zigbee_dongle.png",
         )
         
         # Set custom icon for Zigbee dongle
