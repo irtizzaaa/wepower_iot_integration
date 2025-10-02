@@ -80,6 +80,7 @@ class WePowerIoTBLEBinarySensor(BinarySensorEntity):
             manufacturer="WePower Technologies",
             model="Batteryless IoT Device",  # Generic model, will be updated
             sw_version="1.0.0",
+            configuration_url="https://github.com/irtizzaaa/wepower_iot_integration",
         )
         
         # Initialize binary sensor properties
@@ -264,6 +265,7 @@ class WePowerIoTBLEBinarySensor(BinarySensorEntity):
             model=model,
             sw_version="1.0.0",
             suggested_area=suggested_area,
+            configuration_url="https://github.com/irtizzaaa/wepower_iot_integration",
         )
 
     def _get_professional_device_id(self) -> str:
