@@ -101,6 +101,9 @@ class WePowerIoTBluetoothProcessorCoordinator(
                 self.hass, self._async_schedule_poll, FALLBACK_POLL_INTERVAL
             )
         )
+        
+        # Don't call parent async_init as it may raise ConfigEntryNotReady
+        # for devices that don't advertise immediately
 
     @callback
     def _async_handle_bluetooth_event(
