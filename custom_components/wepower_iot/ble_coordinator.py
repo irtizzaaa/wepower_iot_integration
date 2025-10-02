@@ -104,6 +104,12 @@ class WePowerIoTBluetoothProcessorCoordinator(
         
         # Don't call parent async_init as it may raise ConfigEntryNotReady
         # for devices that don't advertise immediately
+    
+    @property
+    def available(self) -> bool:
+        """Return if coordinator is available - always True for event-driven devices."""
+        # For event-driven devices, always consider available even without recent data
+        return True
 
     @callback
     def _async_handle_bluetooth_event(
