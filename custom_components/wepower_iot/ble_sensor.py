@@ -43,23 +43,9 @@ async def async_setup_entry(
     if not address or address == "00:00:00:00:00:00":
         address = config_entry.unique_id
     
-    # If still no address, create a test device for development/testing
+    # If still no address, skip BLE sensor setup
     if not address or address.startswith("wepower_temp_") or address.startswith("wepower_discovery_"):
-        _LOGGER.info("No real BLE device address found, creating test device for entry %s", config_entry.entry_id)
-        # Create a test device entity to ensure device appears in device list
-        from .ble_binary_sensor import WePowerIoTBLEBinarySensor
-        coordinator = config_entry.runtime_data
-        if not coordinator:
-            try:
-                coordinator = hass.data[DOMAIN][config_entry.entry_id]["coordinator"]
-            except KeyError:
-                _LOGGER.error("No coordinator found for test device entry %s", config_entry.entry_id)
-                return
-        
-        # Create a test binary sensor entity
-        test_entity = WePowerIoTBLEBinarySensor(coordinator, config_entry)
-        async_add_entities([test_entity])
-        _LOGGER.info("Created test device entity for development/testing")
+        _LOGGER.info("No real BLE device address found, skipping BLE sensor setup for entry %s", config_entry.entry_id)
         return
     
     _LOGGER.info("BLE device address found: %s", address)
@@ -148,13 +134,10 @@ class WePowerIoTBLESensor(SensorEntity):
         self._attr_device_info = DeviceInfo(
             identifiers={(DOMAIN, config_entry.entry_id)},
             name=self._attr_name,
-            manufacturer="WePower Technologies",
-            model="Batteryless IoT Device",
+            manufacturer="WePower",
+            model="BLE Sensor",
             sw_version="1.0.0",
         )
-        
-        # Set custom icon using tplink_monitor branding for testing
-        self._attr_icon = "https://brands.home-assistant.io/tplink_monitor/icon.png"
         
         # Initialize sensor properties
         self._attr_device_class = None
@@ -183,7 +166,11 @@ class WePowerIoTBLESensor(SensorEntity):
             "address": self.address,
             "device_type": self._device_type,
             "rssi": None,
+            "signal_strength": None,
+            "battery_level": None,
             "last_seen": None,
+            "ble_active": False,
+            "ble_connected": False,
             "ble_status": "inactive",
         }
         
@@ -191,7 +178,11 @@ class WePowerIoTBLESensor(SensorEntity):
         if self.coordinator.data:
             attrs.update({
                 "rssi": self.coordinator.data.get("rssi"),
+                "signal_strength": self.coordinator.data.get("signal_strength"),
+                "battery_level": self.coordinator.data.get("battery_level"),
                 "last_seen": self.coordinator.data.get("timestamp"),
+                "ble_active": True,  # If we have data, BLE is active
+                "ble_connected": self.coordinator.available,  # Use coordinator availability
                 "ble_status": "active" if self.coordinator.available else "inactive",
                 "last_update_success": getattr(self.coordinator, 'last_update_success', True),
             })
@@ -227,9 +218,8 @@ class WePowerIoTBLESensor(SensorEntity):
     def _update_from_coordinator(self) -> None:
         """Update sensor state from coordinator data."""
         if not self.coordinator.data:
-            # For event-driven devices, stay available even without recent data
-            self._attr_available = True
-            _LOGGER.debug("BLE sensor %s: No coordinator data - normal for event-driven devices", self.address)
+            self._attr_available = False
+            _LOGGER.debug("BLE sensor %s: No coordinator data", self.address)
             return
             
         data = self.coordinator.data
@@ -281,30 +271,30 @@ class WePowerIoTBLESensor(SensorEntity):
             self._attr_device_class = SensorDeviceClass.TEMPERATURE
             self._attr_native_unit_of_measurement = UnitOfTemperature.CELSIUS
             self._attr_name = f"WePower Temperature Sensor {self._get_professional_device_id()}"
-            self._attr_icon = "https://brands.home-assistant.io/tplink_monitor/icon.png"
+            self._attr_icon = "mdi:thermometer"
             
         elif "humidity" in device_type:
             self._attr_device_class = SensorDeviceClass.HUMIDITY
             self._attr_native_unit_of_measurement = PERCENTAGE
             self._attr_name = f"WePower Humidity Sensor {self._get_professional_device_id()}"
-            self._attr_icon = "https://brands.home-assistant.io/tplink_monitor/icon.png"
+            self._attr_icon = "mdi:water-percent"
             
         elif "pressure" in device_type:
             self._attr_device_class = SensorDeviceClass.PRESSURE
             self._attr_native_unit_of_measurement = UnitOfPressure.HPA
             self._attr_name = f"WePower Pressure Sensor {self._get_professional_device_id()}"
-            self._attr_icon = "https://brands.home-assistant.io/tplink_monitor/icon.png"
+            self._attr_icon = "mdi:gauge"
             
         elif "vibration" in device_type:
             self._attr_device_class = SensorDeviceClass.VIBRATION
             self._attr_native_unit_of_measurement = "m/s²"
             self._attr_name = f"WePower Vibration Sensor {self._get_professional_device_id()}"
-            self._attr_icon = "https://brands.home-assistant.io/tplink_monitor/icon.png"
+            self._attr_icon = "mdi:vibrate"
             
         else:
             # Generic sensor
             self._attr_name = f"WePower IoT Sensor {self._get_professional_device_id()}"
-            self._attr_icon = "https://brands.home-assistant.io/tplink_monitor/icon.png"
+            self._attr_icon = "mdi:chip"
 
     def _update_device_info(self) -> None:
         """Update device info with proper name and model."""
@@ -312,19 +302,22 @@ class WePowerIoTBLESensor(SensorEntity):
         
         # Set model based on device type
         model_map = {
-            "leak_sensor": "Batteryless Leak Sensor",
-            "temperature_sensor": "Batteryless Temperature Sensor",
-            "humidity_sensor": "Batteryless Humidity Sensor",
-            "pressure_sensor": "Batteryless Pressure Sensor",
-            "vibration_sensor": "Batteryless Vibration Sensor",
-            "on_off_switch": "Batteryless On/Off Switch",
-            "light_switch": "Batteryless Light Switch",
-            "door_switch": "Batteryless Door Switch",
-            "toggle_switch": "Batteryless Toggle Switch",
-            "unknown_device": "Batteryless IoT Device"
+            "leak_sensor": "Leak Sensor",
+            "temperature_sensor": "Temperature Sensor",
+            "humidity_sensor": "Humidity Sensor",
+            "pressure_sensor": "Pressure Sensor",
+            "vibration_sensor": "Vibration Sensor",
+            "on_off_switch": "On/Off Switch",
+            "light_switch": "Light Switch",
+            "door_switch": "Door Switch",
+            "toggle_switch": "Toggle Switch",
+            "unknown_device": "IoT Device"
         }
         
         model = model_map.get(device_type, "IoT Sensor")
+        
+        # Set device image based on device type
+        device_image = self._get_device_image(device_type)
         
         # Update device info
         self._attr_device_info = DeviceInfo(
@@ -334,27 +327,27 @@ class WePowerIoTBLESensor(SensorEntity):
             model=model,
             sw_version="1.0.0",
         )
+        
+        # Set device image if available
+        if device_image:
+            self._attr_device_info["image"] = device_image
     
-    def _get_professional_device_id(self) -> str:
-        """Generate a professional device identifier from MAC address."""
-        # Handle test/discovery addresses
-        if self.address.startswith("wepower_") or self.address == "00:00:00:00:00:00":
-            # For test devices, use entry ID to generate a consistent ID
-            entry_id = self.config_entry.entry_id
-            # Extract numbers from entry ID or use a hash
-            import hashlib
-            hash_obj = hashlib.md5(entry_id.encode())
-            hash_hex = hash_obj.hexdigest()
-            device_number = int(hash_hex[:3], 16) % 1000
-            return f"Test-{device_number:03d}"
+    def _get_device_image(self, device_type: str) -> str:
+        """Get device image URL based on device type."""
+        # Map device types to their corresponding images
+        image_map = {
+            "temperature_sensor": "/local/wepower_iot/temperature_sensor.png",
+            "humidity_sensor": "/local/wepower_iot/humidity_sensor.png",
+            "pressure_sensor": "/local/wepower_iot/pressure_sensor.png",
+            "vibration_sensor": "/local/wepower_iot/vibration_sensor.png",
+            "leak_sensor": "/local/wepower_iot/leak_sensor.png",
+            "on_off_switch": "/local/wepower_iot/switch.png",
+            "light_switch": "/local/wepower_iot/light_switch.png",
+            "door_switch": "/local/wepower_iot/door_sensor.png",
+            "toggle_switch": "/local/wepower_iot/toggle_switch.png",
+        }
         
-        # Remove colons and get last 6 characters
-        clean_address = self.address.replace(":", "").upper()
-        last_6 = clean_address[-6:]
-        
-        # Convert to a more professional format
-        device_number = int(last_6, 16) % 1000  # Get a number between 0-999
-        return f"Unit-{device_number:03d}"
+        return image_map.get(device_type.lower(), "/local/wepower_iot/iot_sensor.png")
             
     def _extract_sensor_value(self, data: Dict[str, Any]) -> None:
         """Extract sensor value from coordinator data."""
