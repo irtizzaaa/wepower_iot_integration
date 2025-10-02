@@ -1,5 +1,5 @@
 {
-  "domain": "tplink_monitor",
+  "domain": "wwepower_iot",
   "name": "WePower IoT",
   "integration_type": "device",
   "bluetooth": [
