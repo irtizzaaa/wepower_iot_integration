@@ -237,14 +237,21 @@ class WePowerIoTBLESwitch(SwitchEntity):
         
         model = model_map.get(device_type, "IoT Switch")
         
+        # Set device image based on device type
+        device_image = self._get_device_image(device_type)
+        
         # Update device info
         self._attr_device_info = DeviceInfo(
             identifiers={(DOMAIN, self.address)},
             name=self._attr_name,
-            manufacturer="WePower",
+            manufacturer="WePower Technologies",
             model=model,
             sw_version="1.0.0",
         )
+        
+        # Set device image if available
+        if device_image:
+            self._attr_device_info["image"] = device_image
 
     def _get_professional_device_id(self) -> str:
         """Generate a professional device identifier from MAC address."""
@@ -255,6 +262,18 @@ class WePowerIoTBLESwitch(SwitchEntity):
         # Convert to a more professional format
         device_number = int(last_6, 16) % 1000  # Get a number between 0-999
         return f"Unit-{device_number:03d}"
+    
+    def _get_device_image(self, device_type: str) -> str:
+        """Get device image URL based on device type."""
+        # Map device types to their corresponding images
+        image_map = {
+            "on_off_switch": "/local/wepower_iot/switch.png",
+            "light_switch": "/local/wepower_iot/light_switch.png",
+            "door_switch": "/local/wepower_iot/door_sensor.png",
+            "toggle_switch": "/local/wepower_iot/toggle_switch.png",
+        }
+        
+        return image_map.get(device_type.lower(), "/local/wepower_iot/switch.png")
             
     def _extract_switch_value(self, data: Dict[str, Any]) -> None:
         """Extract switch value from coordinator data."""
