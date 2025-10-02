@@ -104,7 +104,8 @@ class WePowerIoTBluetoothConfigFlow(ConfigFlow, domain=DOMAIN):
             step_id="user",
             data_schema=STEP_USER_DATA_SCHEMA,
             description_placeholders={
-                "message": "Manually provision a WePower IoT device by entering its MAC address and decryption key.\n\nSensor Types:\n• Type 1: Temperature Sensor\n• Type 2: Humidity Sensor\n• Type 3: Pressure Sensor\n• Type 4: Leak Sensor (Default)\n\nDecryption Key: 32-character hex string (16 bytes)"
+                "message": "Manually provision a WePower IoT device by entering its MAC address and decryption key.\n\nSensor Types:\n• Type 1: Temperature Sensor\n• Type 2: Humidity Sensor\n• Type 3: Pressure Sensor\n• Type 4: Leak Sensor (Default)\n\nDecryption Key: 32-character hex string (16 bytes)",
+                "integration_icon": "/local/wepower_iot/icon.png"
             }
         )
 
@@ -211,7 +212,8 @@ class WePowerIoTBluetoothConfigFlow(ConfigFlow, domain=DOMAIN):
                 description_placeholders={
                     "message": descriptions.get(device_type, descriptions["unknown"]),
                     "device_name": device_name,
-                    "device_type": device_type.replace("_", " ").title()
+                    "device_type": device_type.replace("_", " ").title(),
+                    "integration_icon": "/local/wepower_iot/icon.png"
                 }
             )
         
