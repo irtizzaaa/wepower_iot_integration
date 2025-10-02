@@ -1,5 +1,5 @@
 {
-  "domain": "wwepower_iot",
+  "domain": "wepower_iot",
   "name": "WePower IoT",
   "integration_type": "device",
   "bluetooth": [
