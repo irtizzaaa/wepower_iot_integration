@@ -32,7 +32,7 @@
   "iot_class": "local_push",
   "loggers": ["wepower_iot_ble"],
   "requirements": ["cryptography>=3.0.0"],
-  "version": "1.0.97",
+  "version": "1.0.99",
   "brand": {
     "icon": "/local/wepower_iot/icon.png"
   }
