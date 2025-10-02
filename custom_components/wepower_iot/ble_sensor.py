@@ -151,7 +151,6 @@ class WePowerIoTBLESensor(SensorEntity):
             manufacturer="WePower Technologies",
             model="Batteryless IoT Device",
             sw_version="1.0.0",
-            configuration_url="https://github.com/irtizzaaa/wepower_iot_integration",
         )
         
         # Initialize sensor properties
@@ -330,7 +329,6 @@ class WePowerIoTBLESensor(SensorEntity):
             manufacturer="WePower Technologies",
             model=model,
             sw_version="1.0.0",
-            configuration_url="https://github.com/irtizzaaa/wepower_iot_integration",
         )
     
     def _get_professional_device_id(self) -> str:
