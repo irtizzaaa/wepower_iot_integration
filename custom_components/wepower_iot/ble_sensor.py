@@ -148,8 +148,8 @@ class WePowerIoTBLESensor(SensorEntity):
         self._attr_device_info = DeviceInfo(
             identifiers={(DOMAIN, config_entry.entry_id)},
             name=self._attr_name,
-            manufacturer="WePower",
-            model="BLE Sensor",
+            manufacturer="WePower Technologies",
+            model="Batteryless IoT Device",
             sw_version="1.0.0",
         )
         
@@ -180,11 +180,7 @@ class WePowerIoTBLESensor(SensorEntity):
             "address": self.address,
             "device_type": self._device_type,
             "rssi": None,
-            "signal_strength": None,
-            "battery_level": None,
             "last_seen": None,
-            "ble_active": False,
-            "ble_connected": False,
             "ble_status": "inactive",
         }
         
@@ -192,11 +188,7 @@ class WePowerIoTBLESensor(SensorEntity):
         if self.coordinator.data:
             attrs.update({
                 "rssi": self.coordinator.data.get("rssi"),
-                "signal_strength": self.coordinator.data.get("signal_strength"),
-                "battery_level": self.coordinator.data.get("battery_level"),
                 "last_seen": self.coordinator.data.get("timestamp"),
-                "ble_active": True,  # If we have data, BLE is active
-                "ble_connected": self.coordinator.available,  # Use coordinator availability
                 "ble_status": "active" if self.coordinator.available else "inactive",
                 "last_update_success": getattr(self.coordinator, 'last_update_success', True),
             })
@@ -316,16 +308,16 @@ class WePowerIoTBLESensor(SensorEntity):
         
         # Set model based on device type
         model_map = {
-            "leak_sensor": "Leak Sensor",
-            "temperature_sensor": "Temperature Sensor",
-            "humidity_sensor": "Humidity Sensor",
-            "pressure_sensor": "Pressure Sensor",
-            "vibration_sensor": "Vibration Sensor",
-            "on_off_switch": "On/Off Switch",
-            "light_switch": "Light Switch",
-            "door_switch": "Door Switch",
-            "toggle_switch": "Toggle Switch",
-            "unknown_device": "IoT Device"
+            "leak_sensor": "Batteryless Leak Sensor",
+            "temperature_sensor": "Batteryless Temperature Sensor",
+            "humidity_sensor": "Batteryless Humidity Sensor",
+            "pressure_sensor": "Batteryless Pressure Sensor",
+            "vibration_sensor": "Batteryless Vibration Sensor",
+            "on_off_switch": "Batteryless On/Off Switch",
+            "light_switch": "Batteryless Light Switch",
+            "door_switch": "Batteryless Door Switch",
+            "toggle_switch": "Batteryless Toggle Switch",
+            "unknown_device": "Batteryless IoT Device"
         }
         
         model = model_map.get(device_type, "IoT Sensor")
@@ -334,7 +326,7 @@ class WePowerIoTBLESensor(SensorEntity):
         self._attr_device_info = DeviceInfo(
             identifiers={(DOMAIN, self.address)},
             name=self._attr_name,
-            manufacturer="WePower",
+            manufacturer="WePower Technologies",
             model=model,
             sw_version="1.0.0",
         )
