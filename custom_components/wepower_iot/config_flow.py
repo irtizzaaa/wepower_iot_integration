@@ -206,7 +206,8 @@ class WePowerIoTConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
                 }),
             }),
             description_placeholders={
-                "message": "WePower IoT BLE Setup\n\nEnter your decryption key to complete setup.\n\nThe MAC address will be automatically detected when your WePower device is discovered.\n\nSensor Types:\n• Type 1: Temperature Sensor\n• Type 2: Humidity Sensor\n• Type 3: Pressure Sensor\n• Type 4: Leak Sensor (Default)\n\nDecryption Key: 32-character hex string (16 bytes)"
+                "message": "WePower IoT BLE Setup\n\nEnter your decryption key to complete setup.\n\nThe MAC address will be automatically detected when your WePower device is discovered.\n\nSensor Types:\n• Type 1: Temperature Sensor\n• Type 2: Humidity Sensor\n• Type 3: Pressure Sensor\n• Type 4: Leak Sensor (Default)\n\nDecryption Key: 32-character hex string (16 bytes)",
+                "integration_icon": "/local/wepower_iot/icon.png"
             }
         )
 
