@@ -35,7 +35,11 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     if entry.data.get("address"):
         # This is a BLE device entry
         coordinator = WePowerIoTBluetoothProcessorCoordinator(hass, entry)
-        await coordinator.async_init()
+        try:
+            await coordinator.async_init()
+        except Exception as e:
+            _LOGGER.warning("BLE coordinator init failed for %s: %s - continuing anyway for event-driven devices", entry.data.get("address"), e)
+            # Don't fail setup for event-driven devices that may not advertise immediately
         entry.runtime_data = coordinator
         
         # Store coordinator in hass.data for consistency with unload process
