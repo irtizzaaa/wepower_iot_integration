@@ -29,11 +29,12 @@
   "codeowners": ["@wepower"],
   "config_flow": true,
   "dependencies": ["bluetooth"],
-  "documentation": "https://github.com/wepower/wepower-iot-homeassistant",
+  "documentation": "https://github.com/irtizzaaa/wepower_iot_integration",
   "iot_class": "local_push",
   "loggers": ["wepower_iot_ble"],
   "requirements": ["cryptography>=3.0.0"],
-  "version": "1.0.92",
+  "version": "1.0.93",
+  "static": ["static"],
   "brand": {
     "icon": "mdi:chip"
   }
