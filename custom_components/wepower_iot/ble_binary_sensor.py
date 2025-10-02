@@ -82,9 +82,6 @@ class WePowerIoTBLEBinarySensor(BinarySensorEntity):
             sw_version="1.0.0",
         )
         
-        # Set custom icon using tplink_monitor branding for testing
-        self._attr_icon = "https://brands.home-assistant.io/tplink_monitor/icon.png"
-        
         # Initialize binary sensor properties
         self._attr_device_class = None
         self._attr_is_on = None
@@ -204,35 +201,35 @@ class WePowerIoTBLEBinarySensor(BinarySensorEntity):
             # DEVICE_TYPE_LEAK_SENSOR = 4 - moisture device class
             self._attr_device_class = BinarySensorDeviceClass.MOISTURE
             self._attr_name = f"WePower Leak Sensor {self._get_professional_device_id()}"
-            self._attr_icon = "https://brands.home-assistant.io/tplink_monitor/icon.png"
+            self._attr_icon = "mdi:water"
             
         elif device_type == "vibration_sensor":
             # DEVICE_TYPE_VIBRATION_MONITOR = 2 - vibration device class
             self._attr_device_class = BinarySensorDeviceClass.VIBRATION
             self._attr_name = f"WePower Vibration Monitor {self._get_professional_device_id()}"
-            self._attr_icon = "https://brands.home-assistant.io/tplink_monitor/icon.png"
+            self._attr_icon = "mdi:vibrate"
             
         elif device_type == "two_way_switch":
             # DEVICE_TYPE_TWO_WAY_SWITCH = 3 - opening device class (on/off)
             self._attr_device_class = BinarySensorDeviceClass.OPENING
             self._attr_name = f"WePower Two-Way Switch {self._get_professional_device_id()}"
-            self._attr_icon = "https://brands.home-assistant.io/tplink_monitor/icon.png"
+            self._attr_icon = "mdi:toggle-switch"
             
         elif device_type in ["button", "legacy"]:
             # DEVICE_TYPE_BUTTON = 1, DEVICE_TYPE_LEGACY = 0 - problem device class
             self._attr_device_class = BinarySensorDeviceClass.PROBLEM
             if device_type == "button":
                 self._attr_name = f"WePower Button {self._get_professional_device_id()}"
-                self._attr_icon = "https://brands.home-assistant.io/tplink_monitor/icon.png"
+                self._attr_icon = "mdi:gesture-tap-button"
             else:  # legacy
                 self._attr_name = f"WePower Legacy Device {self._get_professional_device_id()}"
-                self._attr_icon = "https://brands.home-assistant.io/tplink_monitor/icon.png"
+                self._attr_icon = "mdi:chip"
             
         else:
             # Unknown device type - generic binary sensor
             self._attr_device_class = BinarySensorDeviceClass.PROBLEM
             self._attr_name = f"WePower IoT Alert {self._get_professional_device_id()}"
-            self._attr_icon = "https://brands.home-assistant.io/tplink_monitor/icon.png"
+            self._attr_icon = "mdi:alert"
 
     def _update_device_info(self) -> None:
         """Update device info with proper name and model."""
@@ -260,6 +257,9 @@ class WePowerIoTBLEBinarySensor(BinarySensorEntity):
         }
         suggested_area = area_map.get(device_type, "Home")
         
+        # Set device image based on device type
+        device_image = self._get_device_image(device_type)
+        
         # Update device info
         self._attr_device_info = DeviceInfo(
             identifiers={(DOMAIN, self.config_entry.entry_id)},
@@ -269,6 +269,10 @@ class WePowerIoTBLEBinarySensor(BinarySensorEntity):
             sw_version="1.0.0",
             suggested_area=suggested_area,
         )
+        
+        # Set device image if available
+        if device_image:
+            self._attr_device_info["image"] = device_image
 
     def _get_professional_device_id(self) -> str:
         """Generate a professional device identifier from MAC address."""
@@ -290,6 +294,19 @@ class WePowerIoTBLEBinarySensor(BinarySensorEntity):
         # Convert to a more professional format
         device_number = int(last_6, 16) % 1000  # Get a number between 0-999
         return f"Unit-{device_number:03d}"
+    
+    def _get_device_image(self, device_type: str) -> str:
+        """Get device image URL based on device type."""
+        # Map device types to their corresponding images
+        image_map = {
+            "leak_sensor": "/local/wepower_iot/leak_sensor.png",
+            "vibration_sensor": "/local/wepower_iot/vibration_sensor.png", 
+            "two_way_switch": "/local/wepower_iot/switch.png",
+            "button": "/local/wepower_iot/button.png",
+            "legacy": "/local/wepower_iot/legacy_device.png",
+        }
+        
+        return image_map.get(device_type.lower(), "/local/wepower_iot/iot_device.png")
             
     def _extract_binary_sensor_value(self, data: Dict[str, Any]) -> None:
         """Extract binary sensor value from coordinator data."""
