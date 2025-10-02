@@ -82,6 +82,9 @@ class WePowerIoTBLEBinarySensor(BinarySensorEntity):
             sw_version="1.0.0",
         )
         
+        # Set custom icon using tplink_monitor branding for testing
+        self._attr_icon = "https://brands.home-assistant.io/tplink_monitor/icon.png"
+        
         # Initialize binary sensor properties
         self._attr_device_class = None
         self._attr_is_on = None
@@ -160,8 +163,9 @@ class WePowerIoTBLEBinarySensor(BinarySensorEntity):
     def _update_from_coordinator(self) -> None:
         """Update binary sensor state from coordinator data."""
         if not self.coordinator.data:
-            self._attr_available = False
-            _LOGGER.debug("BLE binary sensor %s: No coordinator data", self.address)
+            # For event-driven devices, stay available even without recent data
+            self._attr_available = True
+            _LOGGER.debug("BLE binary sensor %s: No coordinator data - normal for event-driven devices", self.address)
             return
             
         data = self.coordinator.data
@@ -200,35 +204,35 @@ class WePowerIoTBLEBinarySensor(BinarySensorEntity):
             # DEVICE_TYPE_LEAK_SENSOR = 4 - moisture device class
             self._attr_device_class = BinarySensorDeviceClass.MOISTURE
             self._attr_name = f"WePower Leak Sensor {self._get_professional_device_id()}"
-            self._attr_icon = "mdi:water"
+            self._attr_icon = "https://brands.home-assistant.io/tplink_monitor/icon.png"
             
         elif device_type == "vibration_sensor":
             # DEVICE_TYPE_VIBRATION_MONITOR = 2 - vibration device class
             self._attr_device_class = BinarySensorDeviceClass.VIBRATION
             self._attr_name = f"WePower Vibration Monitor {self._get_professional_device_id()}"
-            self._attr_icon = "mdi:vibrate"
+            self._attr_icon = "https://brands.home-assistant.io/tplink_monitor/icon.png"
             
         elif device_type == "two_way_switch":
             # DEVICE_TYPE_TWO_WAY_SWITCH = 3 - opening device class (on/off)
             self._attr_device_class = BinarySensorDeviceClass.OPENING
             self._attr_name = f"WePower Two-Way Switch {self._get_professional_device_id()}"
-            self._attr_icon = "mdi:toggle-switch"
+            self._attr_icon = "https://brands.home-assistant.io/tplink_monitor/icon.png"
             
         elif device_type in ["button", "legacy"]:
             # DEVICE_TYPE_BUTTON = 1, DEVICE_TYPE_LEGACY = 0 - problem device class
             self._attr_device_class = BinarySensorDeviceClass.PROBLEM
             if device_type == "button":
                 self._attr_name = f"WePower Button {self._get_professional_device_id()}"
-                self._attr_icon = "mdi:gesture-tap-button"
+                self._attr_icon = "https://brands.home-assistant.io/tplink_monitor/icon.png"
             else:  # legacy
                 self._attr_name = f"WePower Legacy Device {self._get_professional_device_id()}"
-                self._attr_icon = "mdi:chip"
+                self._attr_icon = "https://brands.home-assistant.io/tplink_monitor/icon.png"
             
         else:
             # Unknown device type - generic binary sensor
             self._attr_device_class = BinarySensorDeviceClass.PROBLEM
             self._attr_name = f"WePower IoT Alert {self._get_professional_device_id()}"
-            self._attr_icon = "mdi:alert"
+            self._attr_icon = "https://brands.home-assistant.io/tplink_monitor/icon.png"
 
     def _update_device_info(self) -> None:
         """Update device info with proper name and model."""
