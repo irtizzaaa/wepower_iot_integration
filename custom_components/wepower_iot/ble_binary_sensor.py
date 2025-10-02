@@ -77,8 +77,8 @@ class WePowerIoTBLEBinarySensor(BinarySensorEntity):
         self._attr_device_info = DeviceInfo(
             identifiers={(DOMAIN, config_entry.entry_id)},
             name=self._attr_name,
-            manufacturer="WePower",
-            model="IoT Device",  # Generic model, will be updated
+            manufacturer="WePower Technologies",
+            model="Batteryless IoT Device",  # Generic model, will be updated
             sw_version="1.0.0",
         )
         
@@ -107,11 +107,7 @@ class WePowerIoTBLEBinarySensor(BinarySensorEntity):
             "address": self.address,
             "device_type": self._device_type,
             "rssi": None,
-            "signal_strength": None,
-            "battery_level": None,
             "last_seen": None,
-            "ble_active": False,
-            "ble_connected": False,
             "ble_status": "inactive",
         }
         
@@ -119,11 +115,7 @@ class WePowerIoTBLEBinarySensor(BinarySensorEntity):
         if self.coordinator.data:
             attrs.update({
                 "rssi": self.coordinator.data.get("rssi"),
-                "signal_strength": self.coordinator.data.get("signal_strength"),
-                "battery_level": self.coordinator.data.get("battery_level"),
                 "last_seen": self.coordinator.data.get("timestamp"),
-                "ble_active": True,  # If we have data, BLE is active
-                "ble_connected": self.coordinator.available,  # Use coordinator availability
                 "ble_status": "active" if self.coordinator.available else "inactive",
                 "last_update_success": getattr(self.coordinator, 'last_update_success', True),
             })
@@ -244,12 +236,12 @@ class WePowerIoTBLEBinarySensor(BinarySensorEntity):
         
         # Set model based on device type (matching device_type_t enum)
         model_map = {
-            "legacy": "Legacy Device",           # DEVICE_TYPE_LEGACY = 0
-            "button": "Button",                  # DEVICE_TYPE_BUTTON = 1  
-            "vibration_sensor": "Vibration Monitor", # DEVICE_TYPE_VIBRATION_MONITOR = 2
-            "two_way_switch": "Two-Way Switch",  # DEVICE_TYPE_TWO_WAY_SWITCH = 3
-            "leak_sensor": "Leak Sensor",        # DEVICE_TYPE_LEAK_SENSOR = 4
-            "unknown_device": "IoT Device"
+            "legacy": "Batteryless Legacy Device",           # DEVICE_TYPE_LEGACY = 0
+            "button": "Batteryless Button",                  # DEVICE_TYPE_BUTTON = 1  
+            "vibration_sensor": "Batteryless Vibration Monitor", # DEVICE_TYPE_VIBRATION_MONITOR = 2
+            "two_way_switch": "Batteryless Two-Way Switch",  # DEVICE_TYPE_TWO_WAY_SWITCH = 3
+            "leak_sensor": "Batteryless Leak Sensor",        # DEVICE_TYPE_LEAK_SENSOR = 4
+            "unknown_device": "Batteryless IoT Device"
         }
         
         model = model_map.get(device_type, "IoT Sensor")
@@ -268,7 +260,7 @@ class WePowerIoTBLEBinarySensor(BinarySensorEntity):
         self._attr_device_info = DeviceInfo(
             identifiers={(DOMAIN, self.config_entry.entry_id)},
             name=self._attr_name,
-            manufacturer="WePower",
+            manufacturer="WePower Technologies",
             model=model,
             sw_version="1.0.0",
             suggested_area=suggested_area,
