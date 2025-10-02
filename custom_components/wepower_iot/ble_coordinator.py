@@ -80,11 +80,20 @@ class WePowerIoTBluetoothProcessorCoordinator(
             await self._discover_and_update_address()
             return
         
-        # Try to connect to the real MAC address
-        if not (service_info := async_last_service_info(self.hass, self.address)):
-            raise ConfigEntryNotReady(
-                f"No advertisement found for WePower IoT device {self.address}"
-            )
+        # For event-driven devices (like leak sensors), don't require immediate advertisement
+        # These devices may only send data once per year, so we should not fail setup
+        service_info = async_last_service_info(self.hass, self.address)
+        if service_info:
+            _LOGGER.info("✅ Found recent advertisement for %s", self.address)
+            # Process the existing advertisement data
+            parsed_data = self._parse_advertisement_data(service_info)
+            self.data = parsed_data
+            self.last_update_success = True
+        else:
+            _LOGGER.info("ℹ️ No recent advertisement for %s - this is normal for event-driven devices", self.address)
+            # Don't fail setup - just mark as waiting for data
+            self.data = {}
+            self.last_update_success = True
         
         # Set up fallback polling for devices that don't advertise frequently
         self._entry.async_on_unload(
@@ -294,13 +303,15 @@ class WePowerIoTBluetoothProcessorCoordinator(
     @callback
     def _async_schedule_poll(self, _: datetime) -> None:
         """Schedule a poll of the device."""
-        # Simple polling - just trigger an update if we have data
+        # For event-driven devices, don't mark as unavailable due to lack of data
+        # These devices may only send data once per year
         if self.data:
             self.last_update_success = True
             self.async_update_listeners()
         else:
-            # No data for a while, mark as potentially unavailable
-            self.last_update_success = False
+            # Keep as available even without recent data for event-driven devices
+            self.last_update_success = True
+            _LOGGER.debug("ℹ️ No recent data for %s - normal for event-driven devices", self.address)
     
     async def _discover_and_update_address(self) -> None:
         """Discover WePower devices and update the address if found."""
