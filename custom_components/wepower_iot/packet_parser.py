@@ -133,7 +133,7 @@ class GemnsPacket:
                 decrypted_data = decryptor.update(self.encrypted_data.data_bytes) + decryptor.finalize()
             
             # Parse decrypted data
-            decrypted_packet = WePowerEncryptedData(decrypted_data)
+            decrypted_packet = GemnsEncryptedData(decrypted_data)
             
             _LOGGER.info("🔍 DECRYPTED DATA ANALYSIS:")
             _LOGGER.info("  Decrypted data length: %d", len(decrypted_data))
@@ -258,7 +258,7 @@ def parse_gems_packet(manufacturer_data: bytes, decryption_key: Optional[bytes] 
         
         # Validate CRC before processing
         if not packet.validate_crc():
-            _LOGGER.warning("CRC validation failed for WePower packet")
+            _LOGGER.warning("CRC validation failed for Gemns packet")
             return None
         
         result = {
@@ -282,5 +282,5 @@ def parse_gems_packet(manufacturer_data: bytes, decryption_key: Optional[bytes] 
         return result
         
     except Exception as e:
-        _LOGGER.error(f"Failed to parse WePower packet: {e}")
+        _LOGGER.error(f"Failed to parse Gemns packet: {e}")
         return None
