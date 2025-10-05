@@ -1,4 +1,4 @@
-"""Sensor platform for WePower IoT integration."""
+"""Sensor platform for Gemns integration."""
 
 import logging
 from typing import Any, Dict, Optional
@@ -45,7 +45,7 @@ async def async_setup_entry(
     config_entry: ConfigEntry,
     async_add_entities: AddEntitiesCallback,
 ) -> None:
-    """Set up WePower IoT sensors from a config entry."""
+    """Set up Gemns sensors from a config entry."""
     global _entities, _add_entities_callback
     
     # Check if this is a BLE device entry
@@ -69,7 +69,7 @@ async def async_setup_entry(
     # Create sensor entities
     entities = []
     for device in sensor_devices:
-        sensor_entity = WePowerIoTSensor(device_manager, device)
+        sensor_entity = GemnsSensor(device_manager, device)
         entities.append(sensor_entity)
         _entities.append(sensor_entity)
         
@@ -86,7 +86,7 @@ async def async_setup_entry(
             
             if not existing_entity:
                 # Create new entity
-                new_entity = WePowerIoTSensor(device_manager, device_data)
+                new_entity = GemnsSensor(device_manager, device_data)
                 _entities.append(new_entity)
                 _add_entities_callback([new_entity])
                 _LOGGER.info(f"Created new sensor entity for device: {device_id}")
@@ -95,8 +95,8 @@ async def async_setup_entry(
     async_dispatcher_connect(hass, SIGNAL_DEVICE_ADDED, handle_new_device)
 
 
-class WePowerIoTSensor(SensorEntity):
-    """Representation of a WePower IoT sensor."""
+class GemnsSensor(SensorEntity):
+    """Representation of a Gemns sensor."""
 
     def __init__(self, device_manager, device: Dict[str, Any]):
         """Initialize the sensor."""
@@ -111,7 +111,7 @@ class WePowerIoTSensor(SensorEntity):
         self._attr_device_info = DeviceInfo(
             identifiers={(DOMAIN, self.device_id)},
             name=self._attr_name,
-            manufacturer="WePower",
+            manufacturer="Gemns",
             model=device.get("device_type", "Unknown"),
             sw_version=device.get("firmware_version", "1.0.0"),
         )
