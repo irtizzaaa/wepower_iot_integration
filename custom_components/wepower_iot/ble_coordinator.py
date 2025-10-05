@@ -108,11 +108,8 @@ class GemnsBluetoothProcessorCoordinator(
     @property
     def available(self) -> bool:
         """Return if coordinator is available."""
-        # Simple restart detection: if device exists but no recent data, default to off
-        if self.data and self.last_update_success:
-            return True
-        # If device exists but no data (restart scenario), default to off (false)
-        return False
+        # Always available - just track if we have recent data
+        return True
 
     @callback
     def _async_handle_bluetooth_event(
@@ -320,9 +317,9 @@ class GemnsBluetoothProcessorCoordinator(
             self.last_update_success = True
             self.async_update_listeners()
         else:
-            # Device exists but no data (restart scenario) - default to off
+            # Device exists but no data (restart scenario) - keep available but no data
             self.last_update_success = False
-            _LOGGER.debug("ℹ️ Device %s exists but no data - defaulting to off (restart scenario)", self.address)
+            _LOGGER.debug("ℹ️ Device %s exists but no data - keeping available but no data (restart scenario)", self.address)
             self.async_update_listeners()
     
     async def _discover_and_update_address(self) -> None:
