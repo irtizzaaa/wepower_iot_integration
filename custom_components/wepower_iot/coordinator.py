@@ -1,4 +1,4 @@
-"""Data coordinator for WePower IoT integration."""
+"""Data coordinator for Gemns integration."""
 
 import logging
 from datetime import timedelta
@@ -13,8 +13,8 @@ from .const import DOMAIN, SIGNAL_DEVICE_UPDATED
 _LOGGER = logging.getLogger(__name__)
 
 
-class WePowerIoTDataCoordinator(DataUpdateCoordinator):
-    """Class to manage fetching data from the WePower IoT device manager."""
+class GemnsDataCoordinator(DataUpdateCoordinator):
+    """Class to manage fetching data from the Gemns device manager."""
 
     def __init__(self, hass: HomeAssistant, device_manager) -> None:
         """Initialize the coordinator."""
