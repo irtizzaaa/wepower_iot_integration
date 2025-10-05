@@ -1,4 +1,4 @@
-"""The Gemns integration."""
+"""The Gemns™ IoT integration."""
 
 import json
 import logging
@@ -28,7 +28,7 @@ BLE_PLATFORMS: list[Platform] = [
 ]
 
 async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
-    """Set up Gemns from a config entry."""
+    """Set up Gemns™ IoT from a config entry."""
     hass.data.setdefault(DOMAIN, {})
     
     # Check if this is a BLE device entry
@@ -101,7 +101,7 @@ async def async_unload_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
 
 
 async def _register_services(hass: HomeAssistant, device_manager: GemnsDeviceManager):
-    """Register Gemns services."""
+    """Register Gemns™ IoT services."""
     
     async def add_device(service_call):
         """Add a new device."""
@@ -128,3 +128,5 @@ async def _register_services(hass: HomeAssistant, device_manager: GemnsDeviceMan
     hass.services.async_register(DOMAIN, "add_device", add_device)
     hass.services.async_register(DOMAIN, "remove_device", remove_device)
     hass.services.async_register(DOMAIN, "create_entities", create_entities_for_devices)
+
+
