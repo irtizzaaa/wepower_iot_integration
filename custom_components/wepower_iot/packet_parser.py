@@ -1,4 +1,4 @@
-"""Packet parser for Gemns BLE devices with new packet format."""
+"""Packet parser for Gemns™ IoT BLE devices with new packet format."""
 
 import struct
 from typing import Any, Dict, Optional
@@ -9,12 +9,12 @@ import logging
 _LOGGER = logging.getLogger(__name__)
 
 # Constants from the new packet format
-COMPANY_ID = 0x5750  # Gemns company ID
+COMPANY_ID = 0x5750  # Gemns™ IoT company ID
 PACKET_LENGTH = 18  # Total packet length (HA BLE driver filters company ID)
 ENCRYPTED_DATA_SIZE = 16
 
 class GemnsPacketFlags:
-    """Flags field parser for Gemns packets."""
+    """Flags field parser for Gemns™ IoT packets."""
     
     def __init__(self, flags_byte: int):
         self.encrypt_status = flags_byte & 0x01
@@ -23,7 +23,7 @@ class GemnsPacketFlags:
         self.payload_length = (flags_byte >> 4) & 0x0F
 
 class GemnsEncryptedData:
-    """Encrypted data structure for Gemns packets."""
+    """Encrypted data structure for Gemns™ IoT packets."""
     
     def __init__(self, data: bytes):
         if len(data) != ENCRYPTED_DATA_SIZE:
@@ -50,7 +50,7 @@ class GemnsEncryptedData:
         _LOGGER.info("  Payload (bytes 8-15): %s", self.payload.hex())
 
 class GemnsPacket:
-    """Parser for Gemns BLE packets."""
+    """Parser for Gemns™ IoT BLE packets."""
     
     def __init__(self, raw_data: bytes):
         """Initialize packet parser with 18-byte packet (HA BLE driver filters company ID)."""
@@ -60,7 +60,7 @@ class GemnsPacket:
         self.raw_data = raw_data
         # Packet structure after HA BLE driver filters company ID:
         # Flags (1 byte) + Encrypted Data (16 bytes) + CRC (1 byte) = 18 bytes
-        self.company_id = COMPANY_ID  # Gemns company ID (filtered by HA)
+        self.company_id = COMPANY_ID  # Gemns™ IoT company ID (filtered by HA)
         self.flags = GemnsPacketFlags(raw_data[0])  # 1 byte flags
         self.encrypted_data = GemnsEncryptedData(raw_data[1:17])  # 16 bytes encrypted data
         self.crc = raw_data[17]  # 1 byte CRC (position 17, not 16!)
@@ -69,7 +69,7 @@ class GemnsPacket:
                     len(raw_data), raw_data[0], self.crc)
     
     def is_valid_company_id(self) -> bool:
-        """Check if this is a Gemns packet."""
+        """Check if this is a Gemns™ IoT packet."""
         return self.company_id == COMPANY_ID
     
     def validate_crc(self) -> bool:
@@ -249,7 +249,7 @@ class GemnsPacket:
         return sensor_data
 
 def parse_gems_packet(manufacturer_data: bytes, decryption_key: Optional[bytes] = None) -> Optional[Dict[str, Any]]:
-    """Parse Gemns packet from manufacturer data."""
+    """Parse Gemns™ IoT packet from manufacturer data."""
     try:
         packet = GemnsPacket(manufacturer_data)
         
@@ -258,7 +258,7 @@ def parse_gems_packet(manufacturer_data: bytes, decryption_key: Optional[bytes] 
         
         # Validate CRC before processing
         if not packet.validate_crc():
-            _LOGGER.warning("CRC validation failed for Gemns packet")
+            _LOGGER.warning("CRC validation failed for Gemns™ IoT packet")
             return None
         
         result = {
@@ -282,5 +282,5 @@ def parse_gems_packet(manufacturer_data: bytes, decryption_key: Optional[bytes] 
         return result
         
     except Exception as e:
-        _LOGGER.error(f"Failed to parse Gemns packet: {e}")
+        _LOGGER.error(f"Failed to parse Gemns™ IoT packet: {e}")
         return None
