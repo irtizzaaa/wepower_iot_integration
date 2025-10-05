@@ -23,7 +23,7 @@ from .const import (
     DOMAIN,
     CONF_DECRYPTION_KEY,
     CONF_DEVICE_NAME,
-    CONF_SENSOR_TYPE,
+    CONF_DEVICE_TYPE,
 )
 
 _LOGGER = logging.getLogger(__name__)
@@ -135,7 +135,7 @@ class GemnsConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
         if user_input is not None:
             decryption_key = user_input[CONF_DECRYPTION_KEY]
             device_name = user_input.get(CONF_DEVICE_NAME, "Gemns Device")
-            sensor_type = int(user_input.get(CONF_SENSOR_TYPE, "4"))
+            device_type = int(user_input.get(CONF_DEVICE_TYPE, "4"))
             
             # Validate decryption key format
             try:
@@ -146,11 +146,11 @@ class GemnsConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
                         data_schema=vol.Schema({
                             vol.Required(CONF_DECRYPTION_KEY, default=decryption_key): str,
                             vol.Optional(CONF_DEVICE_NAME, default=device_name): str,
-                            vol.Optional(CONF_SENSOR_TYPE, default="4"): vol.In({
-                                "1": "Temperature Sensor",
-                                "2": "Humidity Sensor", 
-                                "3": "Pressure Sensor",
-                                "4": "Leak Sensor (Default)"
+                            vol.Optional(CONF_DEVICE_TYPE, default="4"): vol.In({
+                                "1": "Button",
+                                "2": "Vibration Monitor", 
+                                "3": "Two Way Switch",
+                                "4": "Leak Sensor"
                             }),
                         }),
                         errors={"base": "invalid_decryption_key_length"},
@@ -161,11 +161,11 @@ class GemnsConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
                     data_schema=vol.Schema({
                         vol.Required(CONF_DECRYPTION_KEY, default=decryption_key): str,
                         vol.Optional(CONF_DEVICE_NAME, default=device_name): str,
-                        vol.Optional(CONF_SENSOR_TYPE, default="4"): vol.In({
-                            "1": "Temperature Sensor",
-                            "2": "Humidity Sensor", 
-                            "3": "Pressure Sensor",
-                            "4": "Leak Sensor (Default)"
+                        vol.Optional(CONF_DEVICE_TYPE, default="4"): vol.In({
+                            "1": "Button",
+                            "2": "Vibration Monitor", 
+                            "3": "Two Way Switch",
+                            "4": "Leak Sensor"
                         }),
                     }),
                     errors={"base": "invalid_decryption_key_format"},
@@ -189,7 +189,7 @@ class GemnsConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
                     CONF_ADDRESS: address,  # This will be updated by Bluetooth integration
                     CONF_DECRYPTION_KEY: decryption_key,
                     CONF_DEVICE_NAME: device_name,
-                    CONF_SENSOR_TYPE: sensor_type,
+                    CONF_DEVICE_TYPE: device_type,
                 },
             )
 
@@ -198,15 +198,15 @@ class GemnsConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
             data_schema=vol.Schema({
                 vol.Required(CONF_DECRYPTION_KEY): str,
                 vol.Optional(CONF_DEVICE_NAME): str,
-                vol.Optional(CONF_SENSOR_TYPE, default="4"): vol.In({
-                    "1": "Temperature Sensor",
-                    "2": "Humidity Sensor", 
-                    "3": "Pressure Sensor",
-                    "4": "Leak Sensor (Default)"
+                vol.Optional(CONF_DEVICE_TYPE, default="4"): vol.In({
+                    "1": "Button",
+                    "2": "Vibration Monitor", 
+                    "3": "Two Way Switch",
+                    "4": "Leak Sensor"
                 }),
             }),
             description_placeholders={
-                "message": "Gemns BLE Setup\n\nEnter your decryption key to complete setup.\n\nThe MAC address will be automatically detected when your Gemns device is discovered.\n\nSensor Types:\n• Type 1: Temperature Sensor\n• Type 2: Humidity Sensor\n• Type 3: Pressure Sensor\n• Type 4: Leak Sensor (Default)\n\nDecryption Key: 32-character hex string (16 bytes)",
+                "message": "Gemns BLE Setup\n\nEnter your decryption key to complete setup.\n\nThe MAC address will be automatically detected when your Gemns device is discovered.\n\nDevice Types:\n• Type 1: Button\n• Type 2: Vibration Monitor\n• Type 3: Two Way Switch\n• Type 4: Leak Sensor\n\nDecryption Key: 32-character hex string (16 bytes)",
                 "integration_icon": "/local/gems/icon.png"
             }
         )
