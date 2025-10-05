@@ -56,7 +56,7 @@ class GemnsBluetoothProcessorCoordinator(
             address = real_address.upper()
             _LOGGER.info("🎯 Using real MAC address: %s", address)
         else:
-            address = f"gems_discovery_{entry.entry_id}"
+            address = f"gemns_discovery_{entry.entry_id}"
             _LOGGER.info("🔍 Using discovery identifier: %s", address)
         
         assert address is not None
@@ -75,7 +75,7 @@ class GemnsBluetoothProcessorCoordinator(
         _LOGGER.info("🔍 Coordinator async_init with address: %s", self.address)
         
         # If we're using discovery identifier, try to discover devices
-        if self.address.startswith("gems_discovery_"):
+        if self.address.startswith("gemns_discovery_"):
             _LOGGER.warning("Using discovery identifier, will discover real device")
             await self._discover_and_update_address()
             return
@@ -355,7 +355,7 @@ class GemnsBluetoothProcessorCoordinator(
     async def _schedule_next_discovery(self) -> None:
         """Schedule the next discovery attempt."""
         await asyncio.sleep(5)  # Wait 5 seconds
-        if self.address.startswith("gems_discovery_"):
+        if self.address.startswith("gemns_discovery_"):
             _LOGGER.info("🔄 Retrying discovery...")
             await self._discover_and_update_address()
     
