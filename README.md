@@ -1,6 +1,6 @@
-# WePower IoT Home Assistant Integration
+# Gemns Home Assistant Integration
 
-A comprehensive Home Assistant integration for managing WePower IoT devices including BLE and Zigbee sensors, switches, and lights.
+A comprehensive Home Assistant integration for managing Gemns devices including BLE and Zigbee sensors, switches, and lights.
 
 ## Features
 
@@ -8,7 +8,7 @@ A comprehensive Home Assistant integration for managing WePower IoT devices incl
 - **BLE (Bluetooth Low Energy)** - V0 manual and V1 automatic discovery modes
 - **Zigbee** - Automatic device pairing and management
 - **Serial Port Scanning** - Automatic dongle detection via "Who are you?" protocol
-- **MQTT Communication** - Two-way communication with the WePower IoT add-on
+- **MQTT Communication** - Two-way communication with the Gemns add-on
 
 ### 📱 **Device Types**
 - **Sensors**: Leak sensors, vibration sensors, temperature, humidity, pressure, air quality
@@ -27,20 +27,20 @@ A comprehensive Home Assistant integration for managing WePower IoT devices incl
 ### Option 1: HACS (Recommended)
 1. Install [HACS](https://hacs.xyz/)
 2. Add this repository as a custom repository
-3. Install "WePower IoT" integration
+3. Install "Gemns" integration
 4. Restart Home Assistant
 
 ### Option 2: Manual Installation
 1. Copy the `integration` folder to your `config/custom_components/` directory
 2. Restart Home Assistant
 3. Go to **Settings** → **Devices & Services** → **Integrations**
-4. Click **+ Add Integration** and search for "WePower IoT"
+4. Click **+ Add Integration** and search for "Gemns"
 
 ## Configuration
 
 ### UI Configuration (Recommended)
 1. Go to **Settings** → **Devices & Services** → **Integrations**
-2. Click on **WePower IoT** integration
+2. Click on **Gemns** integration
 3. Configure the following settings:
    - **MQTT Broker URL**: Your MQTT broker address
    - **MQTT Username/Password**: Optional authentication
@@ -52,7 +52,7 @@ A comprehensive Home Assistant integration for managing WePower IoT devices incl
 ### YAML Configuration
 ```yaml
 # Example configuration.yaml
-wepower_iot:
+gems:
   mqtt_broker: "mqtt://homeassistant:1883"
   enable_ble: true
   enable_zigbee: true
@@ -70,7 +70,7 @@ wepower_iot:
 - Device status is updated in real-time via MQTT
 
 #### Manual Device Addition
-1. Go to **Settings** → **Devices & Services** → **WePower IoT**
+1. Go to **Settings** → **Devices & Services** → **Gemns**
 2. Click **Add Device**
 3. Fill in the device information:
    - **Device ID**: Unique identifier
@@ -113,14 +113,14 @@ wepower_iot:
 ## MQTT Topics
 
 ### Status Topics
-- `wepower_iot/status` - Integration status updates
-- `wepower_iot/dongle/{port}` - Dongle status information
-- `wepower_iot/device/{device_id}` - Device updates
+- `gems/status` - Integration status updates
+- `gems/dongle/{port}` - Dongle status information
+- `gems/device/{device_id}` - Device updates
 
 ### Control Topics
-- `wepower_iot/control/ble` - BLE toggle commands
-- `wepower_iot/control/zigbee` - Zigbee toggle commands
-- `wepower_iot/device/{device_id}/command` - Device-specific commands
+- `gems/control/ble` - BLE toggle commands
+- `gems/control/zigbee` - Zigbee toggle commands
+- `gems/device/{device_id}/command` - Device-specific commands
 
 ### Command Format
 ```json
@@ -173,7 +173,7 @@ Enable debug logging in Home Assistant:
 logger:
   default: info
   logs:
-    custom_components.wepower_iot: debug
+    custom_components.gems: debug
 ```
 
 ## Development
@@ -191,7 +191,7 @@ logger:
 4. Update constants and translations
 
 ### Testing
-- Use the integration with the WePower IoT add-on
+- Use the integration with the Gemns add-on
 - Test device discovery and control
 - Verify MQTT communication
 - Check entity state updates
