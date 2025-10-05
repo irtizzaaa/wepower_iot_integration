@@ -1,4 +1,4 @@
-"""Switch platform for Gemns integration."""
+"""Switch platform for Gemns™ IoT integration."""
 
 import json
 import logging
@@ -41,7 +41,7 @@ async def async_setup_entry(
     config_entry: ConfigEntry,
     async_add_entities: AddEntitiesCallback,
 ) -> None:
-    """Set up Gemns switches from a config entry."""
+    """Set up Gemns™ IoT switches from a config entry."""
     global _entities, _add_entities_callback
     
     # Store the callback for dynamic entity creation
@@ -90,7 +90,7 @@ async def async_setup_entry(
 
 
 class GemnsSwitch(SwitchEntity):
-    """Representation of a Gemns switch."""
+    """Representation of a Gemns™ IoT switch."""
 
     def __init__(self, device_manager, device: Dict[str, Any]):
         """Initialize the switch."""
@@ -105,7 +105,7 @@ class GemnsSwitch(SwitchEntity):
         self._attr_device_info = DeviceInfo(
             identifiers={(DOMAIN, self.device_id)},
             name=self._attr_name,
-            manufacturer="Gemns",
+            manufacturer="Gemns™ IoT",
             model=device.get("device_type", "Unknown"),
             sw_version=device.get("firmware_version", "1.0.0"),
         )
