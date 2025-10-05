@@ -113,14 +113,14 @@ gems:
 ## MQTT Topics
 
 ### Status Topics
-- `gems/status` - Integration status updates
-- `gems/dongle/{port}` - Dongle status information
-- `gems/device/{device_id}` - Device updates
+- `gemns/status` - Integration status updates
+- `gemns/dongle/{port}` - Dongle status information
+- `gemns/device/{device_id}` - Device updates
 
 ### Control Topics
-- `gems/control/ble` - BLE toggle commands
-- `gems/control/zigbee` - Zigbee toggle commands
-- `gems/device/{device_id}/command` - Device-specific commands
+- `gemns/control/ble` - BLE toggle commands
+- `gemns/control/zigbee` - Zigbee toggle commands
+- `gemns/device/{device_id}/command` - Device-specific commands
 
 ### Command Format
 ```json
@@ -173,7 +173,7 @@ Enable debug logging in Home Assistant:
 logger:
   default: info
   logs:
-    custom_components.gems: debug
+    custom_components.gemns: debug
 ```
 
 ## Development
