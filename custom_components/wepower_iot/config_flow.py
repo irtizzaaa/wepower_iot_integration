@@ -1,4 +1,4 @@
-"""Config flow for WePower IoT integration."""
+"""Config flow for Gemns integration."""
 
 import logging
 from typing import Any
@@ -29,8 +29,8 @@ from .const import (
 _LOGGER = logging.getLogger(__name__)
 
 
-class WePowerIoTConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
-    """Handle a config flow for WePower IoT."""
+class GemnsConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
+    """Handle a config flow for Gemns."""
 
     VERSION = 1
     
@@ -119,7 +119,7 @@ class WePowerIoTConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
 
         # Create the config entry
         return self.async_create_entry(
-            title="WePower IoT (MQTT)",
+            title="Gemns (MQTT)",
             data={
                 CONF_MQTT_BROKER: mqtt_broker,
                 CONF_MQTT_USERNAME: user_input.get(CONF_MQTT_USERNAME, ""),
@@ -134,7 +134,7 @@ class WePowerIoTConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
         """Handle BLE configuration step - automatic MAC population from beacon."""
         if user_input is not None:
             decryption_key = user_input[CONF_DECRYPTION_KEY]
-            device_name = user_input.get(CONF_DEVICE_NAME, "WePower IoT Device")
+            device_name = user_input.get(CONF_DEVICE_NAME, "Gemns Device")
             sensor_type = int(user_input.get(CONF_SENSOR_TYPE, "4"))
             
             # Validate decryption key format
@@ -175,7 +175,7 @@ class WePowerIoTConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
             # This will be used by the coordinator to identify the device
             unique_id = f"wepower_ble_{device_name.lower().replace(' ', '_')}"
             address = "00:00:00:00:00:00"  # Placeholder - will be updated by Bluetooth integration
-            name = "WePower IoT Device"
+            name = "Gemns Device"
             
             # Set the unique ID for this entry
             await self.async_set_unique_id(unique_id)
@@ -206,8 +206,8 @@ class WePowerIoTConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
                 }),
             }),
             description_placeholders={
-                "message": "WePower IoT BLE Setup\n\nEnter your decryption key to complete setup.\n\nThe MAC address will be automatically detected when your WePower device is discovered.\n\nSensor Types:\n• Type 1: Temperature Sensor\n• Type 2: Humidity Sensor\n• Type 3: Pressure Sensor\n• Type 4: Leak Sensor (Default)\n\nDecryption Key: 32-character hex string (16 bytes)",
-                "integration_icon": "/local/wepower_iot/icon.png"
+                "message": "Gemns BLE Setup\n\nEnter your decryption key to complete setup.\n\nThe MAC address will be automatically detected when your Gemns device is discovered.\n\nSensor Types:\n• Type 1: Temperature Sensor\n• Type 2: Humidity Sensor\n• Type 3: Pressure Sensor\n• Type 4: Leak Sensor (Default)\n\nDecryption Key: 32-character hex string (16 bytes)",
+                "integration_icon": "/local/gems/icon.png"
             }
         )
 
