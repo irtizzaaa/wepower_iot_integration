@@ -1,4 +1,4 @@
-"""Data coordinator for Gemns integration."""
+"""Data coordinator for Gemns™ IoT integration."""
 
 import logging
 from datetime import timedelta
@@ -14,7 +14,7 @@ _LOGGER = logging.getLogger(__name__)
 
 
 class GemnsDataCoordinator(DataUpdateCoordinator):
-    """Class to manage fetching data from the Gemns device manager."""
+    """Class to manage fetching data from the Gemns™ IoT device manager."""
 
     def __init__(self, hass: HomeAssistant, device_manager) -> None:
         """Initialize the coordinator."""
