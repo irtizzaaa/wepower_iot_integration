@@ -51,7 +51,7 @@ BLE_DISCOVERY_MODE_V1_AUTO: Final = "v1_auto"
 
 # Integration name and version
 INTEGRATION_NAME: Final = "Gemns"
-INTEGRATION_VERSION: Final = "1.0.104"
+INTEGRATION_VERSION: Final = "1.0.105"
 
 # BLE Packet Format Constants
 BLE_COMPANY_ID: Final = 0x5750  # Gemns company ID
@@ -63,7 +63,7 @@ CONF_ADDRESS: Final = "address"
 CONF_NAME: Final = "name"
 CONF_DECRYPTION_KEY: Final = "decryption_key"
 CONF_DEVICE_NAME: Final = "device_name"
-CONF_SENSOR_TYPE: Final = "sensor_type"
+CONF_DEVICE_TYPE: Final = "device_type"
 
 # Sensor Types
 SENSOR_TYPE_LEAK: Final = 4
@@ -81,5 +81,3 @@ SWITCH_TYPE_TOGGLE: Final = 9
 # Signals
 SIGNAL_DEVICE_UPDATED: Final = f"{DOMAIN}_device_updated"
 SIGNAL_DEVICE_ADDED: Final = f"{DOMAIN}_device_added"
-
-
