@@ -1,4 +1,4 @@
-"""The WePower IoT integration."""
+"""The Gemns integration."""
 
 import json
 import logging
@@ -10,8 +10,8 @@ from homeassistant.helpers import service
 
 from .const import DOMAIN
 from .device_management import WePowerIoTDeviceManager
-from .coordinator import WePowerIoTDataCoordinator
-from .ble_coordinator import WePowerIoTBluetoothProcessorCoordinator
+from .coordinator import GemnsDataCoordinator
+from .ble_coordinator import GemnsBluetoothProcessorCoordinator
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -34,12 +34,8 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     # Check if this is a BLE device entry
     if entry.data.get("address"):
         # This is a BLE device entry
-        coordinator = WePowerIoTBluetoothProcessorCoordinator(hass, entry)
-        try:
-            await coordinator.async_init()
-        except Exception as e:
-            _LOGGER.warning("BLE coordinator init failed for %s: %s - continuing anyway for event-driven devices", entry.data.get("address"), e)
-            # Don't fail setup for event-driven devices that may not advertise immediately
+        coordinator = GemnsBluetoothProcessorCoordinator(hass, entry)
+        await coordinator.async_init()
         entry.runtime_data = coordinator
         
         # Store coordinator in hass.data for consistency with unload process
@@ -62,7 +58,7 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
         await device_manager.start()
         
         # Create coordinator
-        coordinator = WePowerIoTDataCoordinator(hass, device_manager)
+        coordinator = GemnsDataCoordinator(hass, device_manager)
         await coordinator.async_setup()
         
         # Store device manager and coordinator in hass data
@@ -105,7 +101,7 @@ async def async_unload_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
 
 
 async def _register_services(hass: HomeAssistant, device_manager: WePowerIoTDeviceManager):
-    """Register WePower IoT services."""
+    """Register Gemns services."""
     
     async def add_device(service_call):
         """Add a new device."""
@@ -132,5 +128,3 @@ async def _register_services(hass: HomeAssistant, device_manager: WePowerIoTDevi
     hass.services.async_register(DOMAIN, "add_device", add_device)
     hass.services.async_register(DOMAIN, "remove_device", remove_device)
     hass.services.async_register(DOMAIN, "create_entities", create_entities_for_devices)
-
-
