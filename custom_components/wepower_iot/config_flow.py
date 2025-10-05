@@ -173,7 +173,7 @@ class GemnsConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
             
             # Generate a unique ID for this config entry
             # This will be used by the coordinator to identify the device
-            unique_id = f"gems_ble_{device_name.lower().replace(' ', '_')}"
+            unique_id = f"gemns_ble_{device_name.lower().replace(' ', '_')}"
             address = "00:00:00:00:00:00"  # Placeholder - will be updated by Bluetooth integration
             name = "Gemns Device"
             
