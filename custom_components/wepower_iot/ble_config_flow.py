@@ -257,7 +257,7 @@ class GemnsBluetoothConfigFlow(ConfigFlow, domain=DOMAIN):
         
         # Check name patterns as fallback
         name = discovery_info.name or ""
-        if any(pattern in name.upper() for pattern in ["WEPOWER", "WP"]):
+        if any(pattern in name.upper() for pattern in ["GEMNS", "GEMS"]):
             return True
         
         return False
@@ -320,3 +320,4 @@ class GemnsBluetoothConfigFlow(ConfigFlow, domain=DOMAIN):
     async def async_step_import(self, import_data: dict[str, Any]) -> FlowResult:
         """Handle import from configuration.yaml."""
         return await self.async_step_user(import_data)
+
