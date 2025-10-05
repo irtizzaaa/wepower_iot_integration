@@ -15,7 +15,7 @@ from homeassistant.const import CONF_ADDRESS, CONF_NAME
 from homeassistant.core import HomeAssistant
 import voluptuous as vol
 
-from .const import DOMAIN, BLE_COMPANY_ID, CONF_DECRYPTION_KEY, CONF_DEVICE_NAME, CONF_SENSOR_TYPE
+from .const import DOMAIN, BLE_COMPANY_ID, CONF_DECRYPTION_KEY, CONF_DEVICE_NAME, CONF_DEVICE_TYPE
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -25,11 +25,11 @@ STEP_USER_DATA_SCHEMA = vol.Schema(
         vol.Required(CONF_ADDRESS): str,
         vol.Required(CONF_DECRYPTION_KEY): str,
         vol.Optional(CONF_DEVICE_NAME): str,
-        vol.Optional(CONF_SENSOR_TYPE, default=4): vol.In({
-            "1": "Temperature Sensor",
-            "2": "Humidity Sensor", 
-            "3": "Pressure Sensor",
-            "4": "Leak Sensor (Default)"
+        vol.Optional(CONF_DEVICE_TYPE, default=4): vol.In({
+            "1": "Button",
+            "2": "Vibration Monitor", 
+            "3": "Two Way Switch",
+            "4": "Leak Sensor"
         }),
     }
 )
@@ -38,11 +38,11 @@ STEP_DISCOVERY_DATA_SCHEMA = vol.Schema(
     {
         vol.Required(CONF_DECRYPTION_KEY): str,
         vol.Optional(CONF_DEVICE_NAME): str,
-        vol.Optional(CONF_SENSOR_TYPE, default=4): vol.In({
-            "1": "Temperature Sensor",
-            "2": "Humidity Sensor", 
-            "3": "Pressure Sensor",
-            "4": "Leak Sensor (Default)"
+        vol.Optional(CONF_DEVICE_TYPE, default=4): vol.In({
+            "1": "Button",
+            "2": "Vibration Monitor", 
+            "3": "Two Way Switch",
+            "4": "Leak Sensor"
         }),
     }
 )
@@ -66,7 +66,7 @@ class GemnsBluetoothConfigFlow(ConfigFlow, domain=DOMAIN):
             name = user_input[CONF_NAME]
             decryption_key = user_input[CONF_DECRYPTION_KEY]
             device_name = user_input.get(CONF_DEVICE_NAME, name)
-            sensor_type = int(user_input.get(CONF_SENSOR_TYPE, "4"))  # Convert string to int, default to leak sensor
+            device_type = int(user_input.get(CONF_DEVICE_TYPE, "4"))  # Convert string to int, default to leak sensor
             
             # Validate decryption key format
             try:
@@ -96,7 +96,7 @@ class GemnsBluetoothConfigFlow(ConfigFlow, domain=DOMAIN):
                     CONF_ADDRESS: address,
                     CONF_DECRYPTION_KEY: decryption_key,
                     CONF_DEVICE_NAME: device_name,
-                    CONF_SENSOR_TYPE: sensor_type,
+                    CONF_DEVICE_TYPE: device_type,
                 },
             )
 
@@ -104,7 +104,7 @@ class GemnsBluetoothConfigFlow(ConfigFlow, domain=DOMAIN):
             step_id="user",
             data_schema=STEP_USER_DATA_SCHEMA,
             description_placeholders={
-                "message": "Manually provision a Gemns device by entering its MAC address and decryption key.\n\nSensor Types:\n• Type 1: Temperature Sensor\n• Type 2: Humidity Sensor\n• Type 3: Pressure Sensor\n• Type 4: Leak Sensor (Default)\n\nDecryption Key: 32-character hex string (16 bytes)",
+                "message": "Manually provision a Gemns device by entering its MAC address and decryption key.\n\nDevice Types:\n• Type 1: Button\n• Type 2: Vibration Monitor\n• Type 3: Two Way Switch\n• Type 4: Leak Sensor\n\nDecryption Key: 32-character hex string (16 bytes)",
                 "integration_icon": "/local/gems/icon.png"
             }
         )
@@ -224,7 +224,7 @@ class GemnsBluetoothConfigFlow(ConfigFlow, domain=DOMAIN):
         device_name = device_info.get("device_name", "Gemns Device")
         
         # Map device type to sensor type
-        sensor_type_map = {
+        device_type_map = {
             "legacy": 0,
             "button": 1,
             "vibration_sensor": 2,
@@ -233,7 +233,7 @@ class GemnsBluetoothConfigFlow(ConfigFlow, domain=DOMAIN):
             "unknown": 4  # Default to leak sensor
         }
         
-        sensor_type = sensor_type_map.get(device_type, 4)
+        device_type = device_type_map.get(device_type, 4)
         
         # Create the config entry
         return self.async_create_entry(
@@ -242,8 +242,8 @@ class GemnsBluetoothConfigFlow(ConfigFlow, domain=DOMAIN):
                 CONF_NAME: device_name,
                 CONF_ADDRESS: discovery_info.address,
                 CONF_DECRYPTION_KEY: user_input[CONF_DECRYPTION_KEY],
-                CONF_DEVICE_NAME: device_type,
-                CONF_SENSOR_TYPE: sensor_type,
+                CONF_DEVICE_NAME: device_name,
+                CONF_DEVICE_TYPE: device_type,
             },
         )
 
@@ -274,7 +274,7 @@ class GemnsBluetoothConfigFlow(ConfigFlow, domain=DOMAIN):
                             from .packet_parser import GemnsPacket
                             packet = GemnsPacket(data)
                             if packet.is_valid():
-                                sensor_type = packet.sensor_type
+                                device_type = packet.device_type
                                 
                                 # Map sensor type to device type and name
                                 device_type_map = {
@@ -285,7 +285,7 @@ class GemnsBluetoothConfigFlow(ConfigFlow, domain=DOMAIN):
                                     4: ("leak_sensor", "Leak Sensor"),
                                 }
                                 
-                                device_type, device_name = device_type_map.get(sensor_type, ("unknown", "IoT Device"))
+                                device_type, device_name = device_type_map.get(device_type, ("unknown", "IoT Device"))
                                 
                                 # Generate professional device name
                                 short_address = discovery_info.address.replace(":", "")[-6:].upper()
