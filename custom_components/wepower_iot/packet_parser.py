@@ -1,4 +1,4 @@
-"""Packet parser for WePower IoT BLE devices with new packet format."""
+"""Packet parser for Gemns BLE devices with new packet format."""
 
 import struct
 from typing import Any, Dict, Optional
@@ -9,12 +9,12 @@ import logging
 _LOGGER = logging.getLogger(__name__)
 
 # Constants from the new packet format
-COMPANY_ID = 0x5750  # WePower company ID
+COMPANY_ID = 0x5750  # Gemns company ID
 PACKET_LENGTH = 18  # Total packet length (HA BLE driver filters company ID)
 ENCRYPTED_DATA_SIZE = 16
 
-class WePowerPacketFlags:
-    """Flags field parser for WePower packets."""
+class GemnsPacketFlags:
+    """Flags field parser for Gemns packets."""
     
     def __init__(self, flags_byte: int):
         self.encrypt_status = flags_byte & 0x01
@@ -22,8 +22,8 @@ class WePowerPacketFlags:
         self.event_counter_lsb = (flags_byte >> 2) & 0x03
         self.payload_length = (flags_byte >> 4) & 0x0F
 
-class WePowerEncryptedData:
-    """Encrypted data structure for WePower packets."""
+class GemnsEncryptedData:
+    """Encrypted data structure for Gemns packets."""
     
     def __init__(self, data: bytes):
         if len(data) != ENCRYPTED_DATA_SIZE:
@@ -49,8 +49,8 @@ class WePowerEncryptedData:
         _LOGGER.info("  Sensor Type (bytes 6-7): %s", self.sensor_type.hex())
         _LOGGER.info("  Payload (bytes 8-15): %s", self.payload.hex())
 
-class WePowerPacket:
-    """Parser for WePower IoT BLE packets."""
+class GemnsPacket:
+    """Parser for Gemns BLE packets."""
     
     def __init__(self, raw_data: bytes):
         """Initialize packet parser with 18-byte packet (HA BLE driver filters company ID)."""
@@ -60,16 +60,16 @@ class WePowerPacket:
         self.raw_data = raw_data
         # Packet structure after HA BLE driver filters company ID:
         # Flags (1 byte) + Encrypted Data (16 bytes) + CRC (1 byte) = 18 bytes
-        self.company_id = COMPANY_ID  # WePower company ID (filtered by HA)
-        self.flags = WePowerPacketFlags(raw_data[0])  # 1 byte flags
-        self.encrypted_data = WePowerEncryptedData(raw_data[1:17])  # 16 bytes encrypted data
+        self.company_id = COMPANY_ID  # Gemns company ID (filtered by HA)
+        self.flags = GemnsPacketFlags(raw_data[0])  # 1 byte flags
+        self.encrypted_data = GemnsEncryptedData(raw_data[1:17])  # 16 bytes encrypted data
         self.crc = raw_data[17]  # 1 byte CRC (position 17, not 16!)
         
         _LOGGER.info("🔍 PACKET STRUCTURE: Length=%d, Flags=0x%02X, CRC=0x%02X", 
                     len(raw_data), raw_data[0], self.crc)
     
     def is_valid_company_id(self) -> bool:
-        """Check if this is a WePower packet."""
+        """Check if this is a Gemns packet."""
         return self.company_id == COMPANY_ID
     
     def validate_crc(self) -> bool:
@@ -248,10 +248,10 @@ class WePowerPacket:
         
         return sensor_data
 
-def parse_wepower_packet(manufacturer_data: bytes, decryption_key: Optional[bytes] = None) -> Optional[Dict[str, Any]]:
-    """Parse WePower packet from manufacturer data."""
+def parse_gems_packet(manufacturer_data: bytes, decryption_key: Optional[bytes] = None) -> Optional[Dict[str, Any]]:
+    """Parse Gemns packet from manufacturer data."""
     try:
-        packet = WePowerPacket(manufacturer_data)
+        packet = GemnsPacket(manufacturer_data)
         
         if not packet.is_valid_company_id():
             return None
