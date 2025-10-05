@@ -2,7 +2,7 @@
 # This file shows how to configure the integration manually
 
 # Gemns Integration Configuration
-gems:
+gemns:
   # MQTT Broker Configuration
   mqtt_broker: "mqtt://homeassistant:1883"
   mqtt_username: "your_mqtt_username"  # Optional
