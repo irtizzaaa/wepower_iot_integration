@@ -1,4 +1,4 @@
-"""BLE switch platform for WePower IoT integration."""
+"""BLE switch platform for Gemns integration."""
 
 import logging
 from typing import Any, Dict, Optional
@@ -21,7 +21,7 @@ async def async_setup_entry(
     config_entry: ConfigEntry,
     async_add_entities: AddEntitiesCallback,
 ) -> None:
-    """Set up WePower IoT BLE switches from a config entry."""
+    """Set up Gemns BLE switches from a config entry."""
     _LOGGER.info("Setting up BLE switch for entry %s", config_entry.entry_id)
     address = config_entry.unique_id
     if not address:
@@ -267,13 +267,13 @@ class GemnsBLESwitch(SwitchEntity):
         """Get device image URL based on device type."""
         # Map device types to their corresponding images
         image_map = {
-            "on_off_switch": "/local/wepower_iot/switch.png",
-            "light_switch": "/local/wepower_iot/light_switch.png",
-            "door_switch": "/local/wepower_iot/door_sensor.png",
-            "toggle_switch": "/local/wepower_iot/toggle_switch.png",
+            "on_off_switch": "/local/gems/switch.png",
+            "light_switch": "/local/gems/light_switch.png",
+            "door_switch": "/local/gems/door_sensor.png",
+            "toggle_switch": "/local/gems/toggle_switch.png",
         }
         
-        return image_map.get(device_type.lower(), "/local/wepower_iot/switch.png")
+        return image_map.get(device_type.lower(), "/local/gems/switch.png")
             
     def _extract_switch_value(self, data: Dict[str, Any]) -> None:
         """Extract switch value from coordinator data."""
