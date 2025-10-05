@@ -1,4 +1,4 @@
-"""Config flow for WePower IoT BLE integration."""
+"""Config flow for Gemns BLE integration."""
 
 from __future__ import annotations
 
@@ -48,8 +48,8 @@ STEP_DISCOVERY_DATA_SCHEMA = vol.Schema(
 )
 
 
-class WePowerIoTBluetoothConfigFlow(ConfigFlow, domain=DOMAIN):
-    """Handle a config flow for WePower IoT BLE."""
+class GemnsBluetoothConfigFlow(ConfigFlow, domain=DOMAIN):
+    """Handle a config flow for Gemns BLE."""
 
     VERSION = 1
 
@@ -104,8 +104,8 @@ class WePowerIoTBluetoothConfigFlow(ConfigFlow, domain=DOMAIN):
             step_id="user",
             data_schema=STEP_USER_DATA_SCHEMA,
             description_placeholders={
-                "message": "Manually provision a WePower IoT device by entering its MAC address and decryption key.\n\nSensor Types:\n• Type 1: Temperature Sensor\n• Type 2: Humidity Sensor\n• Type 3: Pressure Sensor\n• Type 4: Leak Sensor (Default)\n\nDecryption Key: 32-character hex string (16 bytes)",
-                "integration_icon": "/local/wepower_iot/icon.png"
+                "message": "Manually provision a Gemns device by entering its MAC address and decryption key.\n\nSensor Types:\n• Type 1: Temperature Sensor\n• Type 2: Humidity Sensor\n• Type 3: Pressure Sensor\n• Type 4: Leak Sensor (Default)\n\nDecryption Key: 32-character hex string (16 bytes)",
+                "integration_icon": "/local/gems/icon.png"
             }
         )
 
@@ -117,8 +117,8 @@ class WePowerIoTBluetoothConfigFlow(ConfigFlow, domain=DOMAIN):
         await self.async_set_unique_id(discovery_info.address)
         self._abort_if_unique_id_configured()
         
-        # Check if this looks like a WePower IoT device
-        if not self._is_wepower_device(discovery_info):
+        # Check if this looks like a Gemns device
+        if not self._is_gems_device(discovery_info):
             return self.async_abort(reason="not_supported")
         
         # Extract device type from beacon data for better discovery display
@@ -142,7 +142,7 @@ class WePowerIoTBluetoothConfigFlow(ConfigFlow, domain=DOMAIN):
             devices = []
             for address, device_info in self._discovered_devices.items():
                 device_type = device_info.get("device_type", "unknown")
-                device_name = device_info.get("device_name", "WePower IoT Device")
+                device_name = device_info.get("device_name", "Gemns Device")
                 
                 # Add device type icon
                 icon_map = {
@@ -169,7 +169,7 @@ class WePowerIoTBluetoothConfigFlow(ConfigFlow, domain=DOMAIN):
                     })
                 }),
                 description_placeholders={
-                    "message": "Select the WePower IoT device you want to configure:"
+                    "message": "Select the Gemns device you want to configure:"
                 }
             )
         
@@ -189,7 +189,7 @@ class WePowerIoTBluetoothConfigFlow(ConfigFlow, domain=DOMAIN):
         if user_input is None:
             device_info = self._selected_device
             device_type = device_info.get("device_type", "unknown")
-            device_name = device_info.get("device_name", "WePower IoT Device")
+            device_name = device_info.get("device_name", "Gemns Device")
             
             # Create device-specific schema
             schema = {
@@ -198,12 +198,12 @@ class WePowerIoTBluetoothConfigFlow(ConfigFlow, domain=DOMAIN):
             
             # Add device-specific description
             descriptions = {
-                "leak_sensor": "Configure your WePower Leak Sensor. This device detects water leaks and moisture.",
-                "vibration_sensor": "Configure your WePower Vibration Monitor. This device detects vibrations and movement.",
-                "two_way_switch": "Configure your WePower Two-Way Switch. This device can be turned on/off remotely.",
-                "button": "Configure your WePower Button. This device sends signals when pressed.",
-                "legacy": "Configure your WePower Legacy Device. This device provides basic IoT functionality.",
-                "unknown": "Configure your WePower IoT Device. This device provides IoT functionality."
+                "leak_sensor": "Configure your Gemns Leak Sensor. This device detects water leaks and moisture.",
+                "vibration_sensor": "Configure your Gemns Vibration Monitor. This device detects vibrations and movement.",
+                "two_way_switch": "Configure your Gemns Two-Way Switch. This device can be turned on/off remotely.",
+                "button": "Configure your Gemns Button. This device sends signals when pressed.",
+                "legacy": "Configure your Gemns Legacy Device. This device provides basic IoT functionality.",
+                "unknown": "Configure your Gemns Device. This device provides IoT functionality."
             }
             
             return self.async_show_form(
@@ -213,7 +213,7 @@ class WePowerIoTBluetoothConfigFlow(ConfigFlow, domain=DOMAIN):
                     "message": descriptions.get(device_type, descriptions["unknown"]),
                     "device_name": device_name,
                     "device_type": device_type.replace("_", " ").title(),
-                    "integration_icon": "/local/wepower_iot/icon.png"
+                    "integration_icon": "/local/gems/icon.png"
                 }
             )
         
@@ -221,7 +221,7 @@ class WePowerIoTBluetoothConfigFlow(ConfigFlow, domain=DOMAIN):
         device_info = self._selected_device
         discovery_info = device_info["discovery_info"]
         device_type = device_info.get("device_type", "unknown")
-        device_name = device_info.get("device_name", "WePower IoT Device")
+        device_name = device_info.get("device_name", "Gemns Device")
         
         # Map device type to sensor type
         sensor_type_map = {
@@ -247,8 +247,8 @@ class WePowerIoTBluetoothConfigFlow(ConfigFlow, domain=DOMAIN):
             },
         )
 
-    def _is_wepower_device(self, discovery_info: BluetoothServiceInfo) -> bool:
-        """Check if this is a WePower IoT device using new packet format."""
+    def _is_gems_device(self, discovery_info: BluetoothServiceInfo) -> bool:
+        """Check if this is a Gemns device using new packet format."""
         # Check manufacturer data for new Company ID
         if discovery_info.manufacturer_data:
             for manufacturer_id, data in discovery_info.manufacturer_data.items():
@@ -271,8 +271,8 @@ class WePowerIoTBluetoothConfigFlow(ConfigFlow, domain=DOMAIN):
                     if manufacturer_id == BLE_COMPANY_ID and len(data) >= 20:
                         # Try to parse the packet to get device type
                         try:
-                            from .packet_parser import WePowerPacket
-                            packet = WePowerPacket(data)
+                            from .packet_parser import GemnsPacket
+                            packet = GemnsPacket(data)
                             if packet.is_valid():
                                 sensor_type = packet.sensor_type
                                 
@@ -290,7 +290,7 @@ class WePowerIoTBluetoothConfigFlow(ConfigFlow, domain=DOMAIN):
                                 # Generate professional device name
                                 short_address = discovery_info.address.replace(":", "")[-6:].upper()
                                 device_number = int(short_address, 16) % 1000
-                                professional_name = f"WePower {device_name} Unit-{device_number:03d}"
+                                professional_name = f"Gemns {device_name} Unit-{device_number:03d}"
                                 
                                 return device_type, professional_name
                         except Exception as e:
@@ -298,26 +298,25 @@ class WePowerIoTBluetoothConfigFlow(ConfigFlow, domain=DOMAIN):
                             pass
             
             # Fallback: use device name or generate generic name
-            device_name = discovery_info.name or "WePower IoT Device"
-            if "WePower" in device_name:
+            device_name = discovery_info.name or "Gemns Device"
+            if "Gemns" in device_name:
                 # Try to extract device type from name
                 if "Leak" in device_name or "leak" in device_name:
-                    return "leak_sensor", "WePower Leak Sensor"
+                    return "leak_sensor", "Gemns Leak Sensor"
                 elif "Vibration" in device_name or "vibration" in device_name:
-                    return "vibration_sensor", "WePower Vibration Monitor"
+                    return "vibration_sensor", "Gemns Vibration Monitor"
                 elif "Switch" in device_name or "switch" in device_name:
-                    return "two_way_switch", "WePower Two-Way Switch"
+                    return "two_way_switch", "Gemns Two-Way Switch"
                 elif "Button" in device_name or "button" in device_name:
-                    return "button", "WePower Button"
+                    return "button", "Gemns Button"
             
             # Default fallback
-            return "unknown", "WePower IoT Device"
+            return "unknown", "Gemns Device"
             
         except Exception as e:
             print(f"Error extracting device info: {e}")
-            return "unknown", "WePower IoT Device"
+            return "unknown", "Gemns Device"
 
     async def async_step_import(self, import_data: dict[str, Any]) -> FlowResult:
         """Handle import from configuration.yaml."""
         return await self.async_step_user(import_data)
-
