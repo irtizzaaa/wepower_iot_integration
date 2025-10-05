@@ -1,4 +1,4 @@
-"""Input boolean platform for Gemns integration."""
+"""Input boolean platform for Gemns™ IoT integration."""
 
 import logging
 from typing import Any, Dict, Optional
@@ -19,7 +19,7 @@ async def async_setup_entry(
     config_entry: ConfigEntry,
     async_add_entities: AddEntitiesCallback,
 ) -> None:
-    """Set up Gemns input booleans from a config entry."""
+    """Set up Gemns™ IoT input booleans from a config entry."""
     
     # Get device manager
     device_manager = hass.data[DOMAIN][config_entry.entry_id].get("device_manager")
@@ -47,7 +47,7 @@ class GemnsBLEToggle(InputBoolean):
     def __init__(self, device_manager):
         """Initialize the BLE toggle."""
         self.device_manager = device_manager
-        self._attr_name = "Gemns BLE Enabled"
+        self._attr_name = "Gemns™ IoT BLE Enabled"
         self._attr_unique_id = f"{DOMAIN}_ble_enabled"
         self._attr_icon = "mdi:bluetooth"
         self._attr_should_poll = False
@@ -55,8 +55,8 @@ class GemnsBLEToggle(InputBoolean):
         # Set device info
         self._attr_device_info = DeviceInfo(
             identifiers={(DOMAIN, "ble_toggle")},
-            name="Gemns BLE Toggle",
-            manufacturer="Gemns",
+            name="Gemns™ IoT BLE Toggle",
+            manufacturer="Gemns™ IoT",
             model="BLE Toggle",
             sw_version="1.0.0",
         )
@@ -93,7 +93,7 @@ class GemnsZigbeeToggle(InputBoolean):
     def __init__(self, device_manager):
         """Initialize the Zigbee toggle."""
         self.device_manager = device_manager
-        self._attr_name = "Gemns Zigbee Enabled"
+        self._attr_name = "Gemns™ IoT Zigbee Enabled"
         self._attr_unique_id = f"{DOMAIN}_zigbee_enabled"
         self._attr_icon = "mdi:zigbee"
         self._attr_should_poll = False
@@ -101,8 +101,8 @@ class GemnsZigbeeToggle(InputBoolean):
         # Set device info
         self._attr_device_info = DeviceInfo(
             identifiers={(DOMAIN, "zigbee_toggle")},
-            name="Gemns Zigbee Toggle",
-            manufacturer="Gemns",
+            name="Gemns™ IoT Zigbee Toggle",
+            manufacturer="Gemns™ IoT",
             model="Zigbee Toggle",
             sw_version="1.0.0",
         )
