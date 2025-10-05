@@ -1,4 +1,4 @@
-"""BLE binary sensor platform for Gemns integration."""
+"""BLE binary sensor platform for Gemns™ IoT integration."""
 
 import logging
 from typing import Any, Dict, Optional
@@ -24,7 +24,7 @@ async def async_setup_entry(
     config_entry: ConfigEntry,
     async_add_entities: AddEntitiesCallback,
 ) -> None:
-    """Set up Gemns BLE binary sensors from a config entry."""
+    """Set up Gemns™ IoT BLE binary sensors from a config entry."""
     _LOGGER.info("Setting up BLE binary sensor for entry %s", config_entry.entry_id)
     address = config_entry.unique_id
     if not address:
@@ -56,7 +56,7 @@ async def async_setup_entry(
 
 
 class GemnsBLEBinarySensor(BinarySensorEntity):
-    """Representation of a Gemns BLE binary sensor."""
+    """Representation of a Gemns™ IoT BLE binary sensor."""
 
     def __init__(
         self,
@@ -69,7 +69,7 @@ class GemnsBLEBinarySensor(BinarySensorEntity):
         # Don't store address statically - get it dynamically from config data
         
         # Set up basic entity properties
-        self._attr_name = config_entry.data.get(CONF_NAME, "Gemns Device")
+        self._attr_name = config_entry.data.get(CONF_NAME, "Gemns™ IoT Device")
         self._attr_unique_id = f"{DOMAIN}_{config_entry.entry_id}_binary"
         self._attr_should_poll = False
         
@@ -77,7 +77,7 @@ class GemnsBLEBinarySensor(BinarySensorEntity):
         self._attr_device_info = DeviceInfo(
             identifiers={(DOMAIN, config_entry.entry_id)},
             name=self._attr_name,
-            manufacturer="Gemns",
+            manufacturer="Gemns™ IoT",
             model="Batteryless IoT Device",  # Generic model, will be updated
             sw_version="1.0.0",
         )
@@ -171,10 +171,10 @@ class GemnsBLEBinarySensor(BinarySensorEntity):
         
         # Update device type and name from coordinator data
         self._device_type = data.get("device_type", "unknown")
-        coordinator_name = data.get("name", "Gemns Device")
+        coordinator_name = data.get("name", "Gemns™ IoT Device")
         
         # Update the entity name if coordinator has a better name
-        if coordinator_name != "Gemns Device":
+        if coordinator_name != "Gemns™ IoT Device":
             self._attr_name = coordinator_name
         
         _LOGGER.info("🏷️ DEVICE TYPE: %s | Type: %s | Name: %s", self.address, self._device_type, self._attr_name)
@@ -201,35 +201,35 @@ class GemnsBLEBinarySensor(BinarySensorEntity):
         if device_type == "leak_sensor":
             # DEVICE_TYPE_LEAK_SENSOR = 4 - moisture device class
             self._attr_device_class = BinarySensorDeviceClass.MOISTURE
-            self._attr_name = f"Gemns Leak Sensor {self._get_professional_device_id()}"
+            self._attr_name = f"Gemns™ IoT Leak Sensor {self._get_professional_device_id()}"
             self._attr_icon = "mdi:water"
             
         elif device_type == "vibration_sensor":
             # DEVICE_TYPE_VIBRATION_MONITOR = 2 - vibration device class
             self._attr_device_class = BinarySensorDeviceClass.VIBRATION
-            self._attr_name = f"Gemns Vibration Monitor {self._get_professional_device_id()}"
+            self._attr_name = f"Gemns™ IoT Vibration Monitor {self._get_professional_device_id()}"
             self._attr_icon = "mdi:vibrate"
             
         elif device_type == "two_way_switch":
             # DEVICE_TYPE_TWO_WAY_SWITCH = 3 - opening device class (on/off)
             self._attr_device_class = BinarySensorDeviceClass.OPENING
-            self._attr_name = f"Gemns Two-Way Switch {self._get_professional_device_id()}"
+            self._attr_name = f"Gemns™ IoT Two-Way Switch {self._get_professional_device_id()}"
             self._attr_icon = "mdi:toggle-switch"
             
         elif device_type in ["button", "legacy"]:
             # DEVICE_TYPE_BUTTON = 1, DEVICE_TYPE_LEGACY = 0 - problem device class
             self._attr_device_class = BinarySensorDeviceClass.PROBLEM
             if device_type == "button":
-                self._attr_name = f"Gemns Button {self._get_professional_device_id()}"
+                self._attr_name = f"Gemns™ IoT Button {self._get_professional_device_id()}"
                 self._attr_icon = "mdi:gesture-tap-button"
             else:  # legacy
-                self._attr_name = f"Gemns Legacy Device {self._get_professional_device_id()}"
+                self._attr_name = f"Gemns™ IoT Legacy Device {self._get_professional_device_id()}"
                 self._attr_icon = "mdi:chip"
             
         else:
             # Unknown device type - generic binary sensor
             self._attr_device_class = BinarySensorDeviceClass.PROBLEM
-            self._attr_name = f"Gemns Alert {self._get_professional_device_id()}"
+            self._attr_name = f"Gemns™ IoT Alert {self._get_professional_device_id()}"
             self._attr_icon = "mdi:alert"
 
     def _update_device_info(self) -> None:
@@ -265,7 +265,7 @@ class GemnsBLEBinarySensor(BinarySensorEntity):
         self._attr_device_info = DeviceInfo(
             identifiers={(DOMAIN, self.config_entry.entry_id)},
             name=self._attr_name,
-            manufacturer="Gemns",
+            manufacturer="Gemns™ IoT",
             model=model,
             sw_version="1.0.0",
             suggested_area=suggested_area,
