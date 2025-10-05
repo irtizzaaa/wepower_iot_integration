@@ -136,7 +136,7 @@ class GemnsBluetoothProcessorCoordinator(
             _LOGGER.error("🔴 BLE PARSE ERROR: %s | Error: %s", self.address, e)
 
     def _parse_advertisement_data(self, service_info: BluetoothServiceInfo) -> dict[str, Any]:
-        """Parse WePower IoT advertisement data using new packet format."""
+        """Parse Gemns advertisement data using new packet format."""
         # Get professional device ID
         clean_address = service_info.address.replace(":", "").upper()
         last_6 = clean_address[-6:]
