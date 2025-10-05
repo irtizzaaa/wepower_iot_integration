@@ -1,8 +1,8 @@
-# Example configuration.yaml entry for WePower IoT integration
+# Example configuration.yaml entry for Gemns integration
 # This file shows how to configure the integration manually
 
-# WePower IoT Integration Configuration
-wepower_iot:
+# Gemns Integration Configuration
+gems:
   # MQTT Broker Configuration
   mqtt_broker: "mqtt://homeassistant:1883"
   mqtt_username: "your_mqtt_username"  # Optional
