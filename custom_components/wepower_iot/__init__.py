@@ -9,7 +9,7 @@ from homeassistant.core import HomeAssistant
 from homeassistant.helpers import service
 
 from .const import DOMAIN
-from .device_management import WePowerIoTDeviceManager
+from .device_management import GemnsDeviceManager
 from .coordinator import GemnsDataCoordinator
 from .ble_coordinator import GemnsBluetoothProcessorCoordinator
 
@@ -28,7 +28,7 @@ BLE_PLATFORMS: list[Platform] = [
 ]
 
 async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
-    """Set up WePower IoT from a config entry."""
+    """Set up Gemns from a config entry."""
     hass.data.setdefault(DOMAIN, {})
     
     # Check if this is a BLE device entry
@@ -54,7 +54,7 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     else:
         # This is a traditional MQTT-based entry
         # Create device manager
-        device_manager = WePowerIoTDeviceManager(hass, entry.data)
+        device_manager = GemnsDeviceManager(hass, entry.data)
         await device_manager.start()
         
         # Create coordinator
@@ -100,7 +100,7 @@ async def async_unload_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     return unload_ok
 
 
-async def _register_services(hass: HomeAssistant, device_manager: WePowerIoTDeviceManager):
+async def _register_services(hass: HomeAssistant, device_manager: GemnsDeviceManager):
     """Register Gemns services."""
     
     async def add_device(service_call):
