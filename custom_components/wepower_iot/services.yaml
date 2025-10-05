@@ -1,7 +1,7 @@
-# WePower IoT Services
-wepower_iot_add_device:
-  name: "Add WePower IoT Device"
-  description: "Manually add a new WePower IoT device"
+# Gemns Services
+gems_add_device:
+  name: "Add Gemns Device"
+  description: "Manually add a new Gemns device"
   fields:
     device_id:
       name: "Device ID"
@@ -57,16 +57,16 @@ wepower_iot_add_device:
       description: "Network key for Zigbee devices or BLE V1 mode"
       required: false
 
-wepower_iot_remove_device:
-  name: "Remove WePower IoT Device"
-  description: "Remove a WePower IoT device"
+gems_remove_device:
+  name: "Remove Gemns Device"
+  description: "Remove a Gemns device"
   fields:
     device_id:
       name: "Device ID"
       description: "ID of the device to remove"
       required: true
 
-wepower_iot_toggle_ble:
+gems_toggle_ble:
   name: "Toggle BLE"
   description: "Enable or disable BLE functionality"
   fields:
@@ -77,7 +77,7 @@ wepower_iot_toggle_ble:
       selector:
         boolean:
 
-wepower_iot_toggle_zigbee:
+gems_toggle_zigbee:
   name: "Toggle Zigbee"
   description: "Enable or disable Zigbee functionality"
   fields:
@@ -88,7 +88,7 @@ wepower_iot_toggle_zigbee:
       selector:
         boolean:
 
-wepower_iot_scan_devices:
+gems_scan_devices:
   name: "Scan for Devices"
   description: "Manually trigger a device scan"
   fields:
