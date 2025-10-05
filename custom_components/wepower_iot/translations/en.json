@@ -38,15 +38,15 @@
   },
   "entity": {
     "sensor": {
-      "wepower_iot_status": {
+      "gems_status": {
         "name": "Gemns Status"
       }
     },
     "binary_sensor": {
-      "wepower_iot_ble_connected": {
+      "gems_ble_connected": {
         "name": "BLE Connected"
       },
-      "wepower_iot_zigbee_connected": {
+      "gems_zigbee_connected": {
         "name": "Zigbee Connected"
       }
     }
