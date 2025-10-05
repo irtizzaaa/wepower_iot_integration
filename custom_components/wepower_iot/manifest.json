@@ -1,6 +1,6 @@
 {
   "domain": "gemns",
-  "name": "Gemns",
+  "name": "Gemns™ IoT",
   "integration_type": "device",
   "bluetooth": [
     {
@@ -32,6 +32,6 @@
   "iot_class": "local_push",
   "loggers": ["gems_ble"],
   "requirements": ["cryptography>=3.0.0"],
-  "version": "1.0.107",
+  "version": "1.0.108",
   "icon": "/local/gems/icon.png"
 }
