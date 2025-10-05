@@ -1,7 +1,7 @@
-# Example configuration.yaml entry for Gemns integration
+# Example configuration.yaml entry for Gemns™ IoT integration
 # This file shows how to configure the integration manually
 
-# Gemns Integration Configuration
+# Gemns™ IoT Integration Configuration
 gemns:
   # MQTT Broker Configuration
   mqtt_broker: "mqtt://homeassistant:1883"
