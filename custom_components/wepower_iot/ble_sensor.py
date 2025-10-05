@@ -1,5 +1,5 @@
 
-"""BLE sensor platform for Gemns integration."""
+"""BLE sensor platform for Gemns™ IoT integration."""
 
 import logging
 from typing import Any, Dict, Optional
@@ -35,7 +35,7 @@ async def async_setup_entry(
     config_entry: ConfigEntry,
     async_add_entities: AddEntitiesCallback,
 ) -> None:
-    """Set up Gemns BLE sensors from a config entry."""
+    """Set up Gemns™ IoT BLE sensors from a config entry."""
     _LOGGER.info("Setting up BLE sensor for entry %s", config_entry.entry_id)
     
     # Get address from config data or unique_id
@@ -113,7 +113,7 @@ async def async_setup_entry(
 
 
 class GemnsBLESensor(SensorEntity):
-    """Representation of a Gemns BLE sensor."""
+    """Representation of a Gemns™ IoT BLE sensor."""
 
     def __init__(
         self,
@@ -126,7 +126,7 @@ class GemnsBLESensor(SensorEntity):
         # Don't store address statically - get it dynamically from config data
         
         # Set up basic entity properties
-        self._attr_name = config_entry.data.get(CONF_NAME, f"Gemns Device")
+        self._attr_name = config_entry.data.get(CONF_NAME, f"Gemns™ IoT Device")
         self._attr_unique_id = f"{DOMAIN}_{config_entry.entry_id}"
         self._attr_should_poll = False
         
@@ -134,7 +134,7 @@ class GemnsBLESensor(SensorEntity):
         self._attr_device_info = DeviceInfo(
             identifiers={(DOMAIN, config_entry.entry_id)},
             name=self._attr_name,
-            manufacturer="Gemns",
+            manufacturer="Gemns™ IoT",
             model="BLE Sensor",
             sw_version="1.0.0",
         )
@@ -272,30 +272,30 @@ class GemnsBLESensor(SensorEntity):
         if "temperature" in device_type:
             self._attr_device_class = SensorDeviceClass.TEMPERATURE
             self._attr_native_unit_of_measurement = UnitOfTemperature.CELSIUS
-            self._attr_name = f"Gemns Button {self._get_professional_device_id()}"
+            self._attr_name = f"Gemns™ IoT Button {self._get_professional_device_id()}"
             self._attr_icon = "mdi:thermometer"
             
         elif "humidity" in device_type:
             self._attr_device_class = SensorDeviceClass.HUMIDITY
             self._attr_native_unit_of_measurement = PERCENTAGE
-            self._attr_name = f"Gemns Vibration Monitor {self._get_professional_device_id()}"
+            self._attr_name = f"Gemns™ IoT Vibration Monitor {self._get_professional_device_id()}"
             self._attr_icon = "mdi:water-percent"
             
         elif "pressure" in device_type:
             self._attr_device_class = SensorDeviceClass.PRESSURE
             self._attr_native_unit_of_measurement = UnitOfPressure.HPA
-            self._attr_name = f"Gemns Two Way Switch {self._get_professional_device_id()}"
+            self._attr_name = f"Gemns™ IoT Two Way Switch {self._get_professional_device_id()}"
             self._attr_icon = "mdi:gauge"
             
         elif "vibration" in device_type:
             self._attr_device_class = SensorDeviceClass.VIBRATION
             self._attr_native_unit_of_measurement = "m/s²"
-            self._attr_name = f"Gemns Vibration Sensor {self._get_professional_device_id()}"
+            self._attr_name = f"Gemns™ IoT Vibration Sensor {self._get_professional_device_id()}"
             self._attr_icon = "mdi:vibrate"
             
         else:
             # Generic sensor
-            self._attr_name = f"Gemns Sensor {self._get_professional_device_id()}"
+            self._attr_name = f"Gemns™ IoT Sensor {self._get_professional_device_id()}"
             self._attr_icon = "mdi:chip"
 
     def _update_device_info(self) -> None:
@@ -325,7 +325,7 @@ class GemnsBLESensor(SensorEntity):
         self._attr_device_info = DeviceInfo(
             identifiers={(DOMAIN, self.address)},
             name=self._attr_name,
-            manufacturer="Gemns",
+            manufacturer="Gemns™ IoT",
             model=model,
             sw_version="1.0.0",
         )
