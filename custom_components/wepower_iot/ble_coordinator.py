@@ -174,47 +174,47 @@ class GemnsBluetoothProcessorCoordinator(
             _LOGGER.warning("⚠️ NO MANUFACTURER DATA: %s", self.address)
         
         # Determine device type based on sensor type
-        if 'sensor_data' in data and 'sensor_type' in data['sensor_data']:
-            sensor_type = data['sensor_data']['sensor_type']
-            _LOGGER.info("🔍 SENSOR TYPE DETECTION: sensor_type=%d (0x%04X)", sensor_type, sensor_type)
-            if sensor_type == 1:
-                data["device_type"] = "temperature_sensor"
-                data["name"] = f"Gemns Temperature Sensor {professional_id}"
-                _LOGGER.info("  ✅ Identified as: temperature_sensor")
-            elif sensor_type == 2:
-                data["device_type"] = "humidity_sensor"
-                data["name"] = f"Gemns Humidity Sensor {professional_id}"
-                _LOGGER.info("  ✅ Identified as: humidity_sensor")
-            elif sensor_type == 3:
-                data["device_type"] = "pressure_sensor"
-                data["name"] = f"Gemns Pressure Sensor {professional_id}"
-                _LOGGER.info("  ✅ Identified as: pressure_sensor")
-            elif sensor_type == 4:
+        if 'sensor_data' in data and 'device_type' in data['sensor_data']:
+            device_type = data['sensor_data']['device_type']
+            _LOGGER.info("🔍 DEVICE TYPE DETECTION: device_type=%d (0x%04X)", device_type, device_type)
+            if device_type == 1:
+                data["device_type"] = "button"
+                data["name"] = f"Gemns Button {professional_id}"
+                _LOGGER.info("  ✅ Identified as: button")
+            elif device_type == 2:
+                data["device_type"] = "vibration_sensor"
+                data["name"] = f"Gemns Vibration Monitor {professional_id}"
+                _LOGGER.info("  ✅ Identified as: vibration_sensor")
+            elif device_type == 3:
+                data["device_type"] = "two_way_switch"
+                data["name"] = f"Gemns Two Way Switch {professional_id}"
+                _LOGGER.info("  ✅ Identified as: two_way_switch")
+            elif device_type == 4:
                 data["device_type"] = "leak_sensor"
                 data["name"] = f"Gemns Leak Sensor {professional_id}"
                 _LOGGER.info("  ✅ Identified as: leak_sensor")
-            elif sensor_type == 5:
+            elif device_type == 5:
                 data["device_type"] = "vibration_sensor"
                 data["name"] = f"Gemns Vibration Sensor {professional_id}"
                 _LOGGER.info("  ✅ Identified as: vibration_sensor")
-            elif sensor_type == 6:
+            elif device_type == 6:
                 data["device_type"] = "on_off_switch"
                 data["name"] = f"Gemns On/Off Switch {professional_id}"
                 _LOGGER.info("  ✅ Identified as: on_off_switch")
-            elif sensor_type == 7:
+            elif device_type == 7:
                 data["device_type"] = "light_switch"
                 data["name"] = f"Gemns Light Switch {professional_id}"
                 _LOGGER.info("  ✅ Identified as: light_switch")
-            elif sensor_type == 8:
+            elif device_type == 8:
                 data["device_type"] = "door_switch"
                 data["name"] = f"Gemns Door Switch {professional_id}"
                 _LOGGER.info("  ✅ Identified as: door_switch")
-            elif sensor_type == 9:
+            elif device_type == 9:
                 data["device_type"] = "toggle_switch"
                 data["name"] = f"Gemns Toggle Switch {professional_id}"
                 _LOGGER.info("  ✅ Identified as: toggle_switch")
             else:
-                _LOGGER.warning("  ⚠️ Unknown sensor type: %d (0x%04X)", sensor_type, sensor_type)
+                _LOGGER.warning("  ⚠️ Unknown device type: %d (0x%04X)", device_type, device_type)
         
         return data
 
