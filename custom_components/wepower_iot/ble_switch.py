@@ -1,4 +1,4 @@
-"""BLE switch platform for Gemns integration."""
+"""BLE switch platform for Gemns™ IoT integration."""
 
 import logging
 from typing import Any, Dict, Optional
@@ -21,7 +21,7 @@ async def async_setup_entry(
     config_entry: ConfigEntry,
     async_add_entities: AddEntitiesCallback,
 ) -> None:
-    """Set up Gemns BLE switches from a config entry."""
+    """Set up Gemns™ IoT BLE switches from a config entry."""
     _LOGGER.info("Setting up BLE switch for entry %s", config_entry.entry_id)
     address = config_entry.unique_id
     if not address:
@@ -53,7 +53,7 @@ async def async_setup_entry(
 
 
 class GemnsBLESwitch(SwitchEntity):
-    """Representation of a Gemns BLE switch."""
+    """Representation of a Gemns™ IoT BLE switch."""
 
     def __init__(
         self,
@@ -66,7 +66,7 @@ class GemnsBLESwitch(SwitchEntity):
         # Don't store address statically - get it dynamically from config data
         
         # Set up basic entity properties
-        self._attr_name = config_entry.data.get("name", "Gemns Device")
+        self._attr_name = config_entry.data.get("name", "Gemns™ IoT Device")
         self._attr_unique_id = f"{DOMAIN}_{config_entry.entry_id}_switch"
         self._attr_should_poll = False
         
@@ -74,7 +74,7 @@ class GemnsBLESwitch(SwitchEntity):
         self._attr_device_info = DeviceInfo(
             identifiers={(DOMAIN, config_entry.entry_id)},
             name=self._attr_name,
-            manufacturer="Gemns",
+            manufacturer="Gemns™ IoT",
             model="BLE Switch",
             sw_version="1.0.0",
         )
@@ -198,19 +198,19 @@ class GemnsBLESwitch(SwitchEntity):
         
         # Set properties based on device type
         if "light" in device_type:
-            self._attr_name = f"Gemns Light Switch {self._get_professional_device_id()}"
+            self._attr_name = f"Gemns™ IoT Light Switch {self._get_professional_device_id()}"
             self._attr_icon = "mdi:lightbulb"
             
         elif "door" in device_type:
-            self._attr_name = f"Gemns Door Switch {self._get_professional_device_id()}"
+            self._attr_name = f"Gemns™ IoT Door Switch {self._get_professional_device_id()}"
             self._attr_icon = "mdi:door"
             
         elif "toggle" in device_type:
-            self._attr_name = f"Gemns Toggle Switch {self._get_professional_device_id()}"
+            self._attr_name = f"Gemns™ IoT Toggle Switch {self._get_professional_device_id()}"
             self._attr_icon = "mdi:toggle-switch"
             
         elif "switch" in device_type:
-            self._attr_name = f"Gemns On/Off Switch {self._get_professional_device_id()}"
+            self._attr_name = f"Gemns™ IoT On/Off Switch {self._get_professional_device_id()}"
             self._attr_icon = "mdi:power"
             
         else:
@@ -244,7 +244,7 @@ class GemnsBLESwitch(SwitchEntity):
         self._attr_device_info = DeviceInfo(
             identifiers={(DOMAIN, self.address)},
             name=self._attr_name,
-            manufacturer="Gemns",
+            manufacturer="Gemns™ IoT",
             model=model,
             sw_version="1.0.0",
         )
