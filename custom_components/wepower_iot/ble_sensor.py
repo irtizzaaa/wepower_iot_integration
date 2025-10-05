@@ -1,31 +1,29 @@
-
-"""BLE sensor platform for WePower IoT integration."""
+"""Binary sensor platform for WePower IoT integration."""
 
 import logging
 from typing import Any, Dict, Optional
 from datetime import datetime, timezone
 
-from homeassistant.components.sensor import (
-    SensorEntity,
-    SensorDeviceClass,
-    SensorStateClass,
+from homeassistant.components.binary_sensor import (
+    BinarySensorEntity,
+    BinarySensorDeviceClass,
 )
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
 from homeassistant.helpers.entity import DeviceInfo
+from homeassistant.helpers.dispatcher import async_dispatcher_connect
 from homeassistant.const import (
     CONF_DEVICE_ID,
     CONF_NAME,
-    CONF_UNIT_OF_MEASUREMENT,
-    PERCENTAGE,
-    UnitOfTemperature,
-    UnitOfPressure,
-    CONCENTRATION_PARTS_PER_MILLION,
 )
 
-from .const import DOMAIN, CONF_ADDRESS, CONF_NAME
-from .ble_coordinator import WePowerIoTBluetoothProcessorCoordinator
+from .const import (
+    DOMAIN,
+    DEVICE_STATUS_CONNECTED,
+    DEVICE_STATUS_OFFLINE,
+    SIGNAL_DEVICE_UPDATED,
+)
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -35,374 +33,173 @@ async def async_setup_entry(
     config_entry: ConfigEntry,
     async_add_entities: AddEntitiesCallback,
 ) -> None:
-    """Set up WePower IoT BLE sensors from a config entry."""
-    _LOGGER.info("Setting up BLE sensor for entry %s", config_entry.entry_id)
+    """Set up WePower IoT binary sensors from a config entry."""
     
-    # Get address from config data or unique_id
-    address = config_entry.data.get(CONF_ADDRESS)
-    if not address or address == "00:00:00:00:00:00":
-        address = config_entry.unique_id
-    
-    # If still no address, skip BLE sensor setup
-    if not address or address.startswith("wepower_temp_") or address.startswith("wepower_discovery_"):
-        _LOGGER.info("No real BLE device address found, skipping BLE sensor setup for entry %s", config_entry.entry_id)
+    # Get device manager
+    device_manager = hass.data[DOMAIN][config_entry.entry_id].get("device_manager")
+    if not device_manager:
         return
-    
-    _LOGGER.info("BLE device address found: %s", address)
-
-    # Get the BLE coordinator from runtime_data
-    coordinator = config_entry.runtime_data
-    if not coordinator:
-        # Fallback: try to get from hass.data
-        _LOGGER.warning("No coordinator in runtime_data, trying hass.data for entry %s", config_entry.entry_id)
-        try:
-            coordinator = hass.data[DOMAIN][config_entry.entry_id]["coordinator"]
-        except KeyError:
-            _LOGGER.error("No coordinator found in runtime_data or hass.data for entry %s", config_entry.entry_id)
-            return
-    
-    _LOGGER.info("BLE coordinator found for entry %s, creating sensor entities", config_entry.entry_id)
-    
-    # Create entities based on device type
+        
+    # Create binary sensor entities for dongle status
     entities = []
     
-    # Get device type from config to determine which entities to create
-    device_type = config_entry.data.get("device_name", "unknown")
-    sensor_type = config_entry.data.get("sensor_type", 4)
+    # BLE Connection Status
+    ble_sensor = WePowerIoTBLESensor(device_manager)
+    entities.append(ble_sensor)
     
-    _LOGGER.info("Creating entities for device type: %s, sensor_type: %d", device_type, sensor_type)
-    
-    # Create entities based on device type (matching device_type_t enum)
-    if device_type in ["leak_sensor"] or sensor_type == 4:
-        # DEVICE_TYPE_LEAK_SENSOR = 4 - create binary sensor only
-        from .ble_binary_sensor import WePowerIoTBLEBinarySensor
-        binary_sensor_entity = WePowerIoTBLEBinarySensor(coordinator, config_entry)
-        entities.append(binary_sensor_entity)
-        _LOGGER.info("Created binary sensor entity for leak sensor")
-        
-    elif device_type in ["vibration_sensor"] or sensor_type == 2:
-        # DEVICE_TYPE_VIBRATION_MONITOR = 2 - create binary sensor only
-        from .ble_binary_sensor import WePowerIoTBLEBinarySensor
-        binary_sensor_entity = WePowerIoTBLEBinarySensor(coordinator, config_entry)
-        entities.append(binary_sensor_entity)
-        _LOGGER.info("Created binary sensor entity for vibration monitor")
-        
-    elif device_type in ["two_way_switch"] or sensor_type == 3:
-        # DEVICE_TYPE_TWO_WAY_SWITCH = 3 - create binary sensor only
-        from .ble_binary_sensor import WePowerIoTBLEBinarySensor
-        binary_sensor_entity = WePowerIoTBLEBinarySensor(coordinator, config_entry)
-        entities.append(binary_sensor_entity)
-        _LOGGER.info("Created binary sensor entity for two-way switch")
-        
-    elif device_type in ["button", "legacy"] or sensor_type in [0, 1]:
-        # DEVICE_TYPE_LEGACY = 0, DEVICE_TYPE_BUTTON = 1 - create binary sensor only
-        from .ble_binary_sensor import WePowerIoTBLEBinarySensor
-        binary_sensor_entity = WePowerIoTBLEBinarySensor(coordinator, config_entry)
-        entities.append(binary_sensor_entity)
-        _LOGGER.info("Created binary sensor entity for button/legacy device")
-        
-    else:
-        # Unknown device type - create binary sensor (fallback)
-        _LOGGER.warning("Unknown device type %s, creating binary sensor", device_type)
-        from .ble_binary_sensor import WePowerIoTBLEBinarySensor
-        binary_sensor_entity = WePowerIoTBLEBinarySensor(coordinator, config_entry)
-        entities.append(binary_sensor_entity)
+    # Zigbee Connection Status
+    zigbee_sensor = WePowerIoTZigbeeSensor(device_manager)
+    entities.append(zigbee_sensor)
     
     if entities:
         async_add_entities(entities)
 
 
-class WePowerIoTBLESensor(SensorEntity):
-    """Representation of a WePower IoT BLE sensor."""
+class WePowerIoTBLESensor(BinarySensorEntity):
+    """Representation of BLE connection status."""
 
-    def __init__(
-        self,
-        coordinator: WePowerIoTBluetoothProcessorCoordinator,
-        config_entry: ConfigEntry,
-    ) -> None:
+    def __init__(self, device_manager):
         """Initialize the BLE sensor."""
-        self.coordinator = coordinator
-        self.config_entry = config_entry
-        # Don't store address statically - get it dynamically from config data
-        
-        # Set up basic entity properties
-        self._attr_name = config_entry.data.get(CONF_NAME, f"WePower IoT Device")
-        self._attr_unique_id = f"{DOMAIN}_{config_entry.entry_id}"
+        self.device_manager = device_manager
+        self._attr_name = "WePower IoT BLE Connected"
+        self._attr_unique_id = f"{DOMAIN}_ble_connected"
+        self._attr_device_class = BinarySensorDeviceClass.CONNECTIVITY
+        self._attr_icon = "mdi:bluetooth"
         self._attr_should_poll = False
         
-        # Set device info
+        # Set device info with custom icon
         self._attr_device_info = DeviceInfo(
-            identifiers={(DOMAIN, config_entry.entry_id)},
-            name=self._attr_name,
-            manufacturer="WePower",
-            model="BLE Sensor",
+            identifiers={(DOMAIN, "ble_dongle")},
+            name="WePower IoT BLE Dongle",
+            manufacturer="WePower Technologies",
+            model="BLE Dongle",
             sw_version="1.0.0",
+            configuration_url=f"https://github.com/wepower/wepower-iot-homeassistant",
+            image="/local/wepower_iot/ble_dongle.png",
         )
         
-        # Initialize sensor properties
-        self._attr_device_class = None
-        self._attr_state_class = SensorStateClass.MEASUREMENT
-        self._attr_native_unit_of_measurement = None
-        self._attr_native_value = None
-        self._attr_available = False
+        # Set custom icon for BLE dongle
+        self._attr_icon = "mdi:bluetooth"
         
-        # Device type will be determined from coordinator data
-        self._device_type = "unknown"
+        # Set initial state
+        self._update_state()
         
-    @property
-    def address(self) -> str:
-        """Get the current MAC address from config data."""
-        return self.config_entry.data.get(CONF_ADDRESS, self.config_entry.unique_id)
+    def _update_state(self):
+        """Update sensor state from device manager."""
+        # Since we removed dongles, check if any BLE devices are configured
+        ble_devices = [d for d in self.device_manager.get_all_devices() 
+                      if d.get("device_type") == "ble"]
         
-    @property
-    def available(self) -> bool:
-        """Return if entity is available."""
-        return self.coordinator.available and self._attr_available
-
+        self._attr_is_on = len(ble_devices) > 0
+        
     @property
     def extra_state_attributes(self) -> Dict[str, Any]:
         """Return entity specific state attributes."""
-        attrs = {
-            "address": self.address,
-            "device_type": self._device_type,
-            "rssi": None,
-            "signal_strength": None,
-            "battery_level": None,
-            "last_seen": None,
-            "ble_active": False,
-            "ble_connected": False,
-            "ble_status": "inactive",
+        ble_devices = [d for d in self.device_manager.get_all_devices() 
+                      if d.get("device_type") == "ble"]
+        
+        return {
+            "device_count": len(ble_devices),
+            "configured_devices": [d.get("device_id") for d in ble_devices],
+            "last_update": datetime.now(timezone.utc).isoformat(),
         }
         
-        # Add data from coordinator if available
-        if self.coordinator.data:
-            attrs.update({
-                "rssi": self.coordinator.data.get("rssi"),
-                "signal_strength": self.coordinator.data.get("signal_strength"),
-                "battery_level": self.coordinator.data.get("battery_level"),
-                "last_seen": self.coordinator.data.get("timestamp"),
-                "ble_active": True,  # If we have data, BLE is active
-                "ble_connected": self.coordinator.available,  # Use coordinator availability
-                "ble_status": "active" if self.coordinator.available else "inactive",
-                "last_update_success": getattr(self.coordinator, 'last_update_success', True),
-            })
-            
-            # Add sensor-specific attributes
-            if "sensor_data" in self.coordinator.data:
-                sensor_data = self.coordinator.data["sensor_data"]
-                if "leak_detected" in sensor_data:
-                    attrs["leak_detected"] = sensor_data["leak_detected"]
-                if "event_counter" in sensor_data:
-                    attrs["event_counter"] = sensor_data["event_counter"]
-                if "sensor_event" in sensor_data:
-                    attrs["sensor_event"] = sensor_data["sensor_event"]
-        
-        return attrs
-
     async def async_added_to_hass(self) -> None:
         """Call when entity is added to hass."""
-        await super().async_added_to_hass()
-        # Register with coordinator to receive updates
-        self._unsub_coordinator = self.coordinator.async_add_listener(self._handle_coordinator_update)
-        # Set up cleanup when entity is removed
-        self.async_on_remove(self._unsub_coordinator)
-
-    def _handle_coordinator_update(self) -> None:
-        """Handle updated data from the coordinator."""
-        try:
-            self._update_from_coordinator()
-            self.async_write_ha_state()
-        except Exception as e:
-            _LOGGER.error("Error handling coordinator update for %s: %s", self.address, e)
-
-    def _update_from_coordinator(self) -> None:
-        """Update sensor state from coordinator data."""
-        if not self.coordinator.data:
-            self._attr_available = False
-            _LOGGER.debug("BLE sensor %s: No coordinator data", self.address)
-            return
-            
-        data = self.coordinator.data
-        _LOGGER.info("🔄 UPDATING SENSOR: %s | Coordinator data: %s", self.address, data)
-        
-        # Update device type
-        self._device_type = data.get("device_type", "unknown")
-        _LOGGER.info("🏷️ DEVICE TYPE: %s | Type: %s", self.address, self._device_type)
-        
-        # Set sensor properties based on device type
-        self._set_sensor_properties()
-        
-        # Update device info with proper name and model
-        self._update_device_info()
-        
-        # Extract sensor value
-        self._extract_sensor_value(data)
-        
-        # Update availability
-        self._attr_available = True
-        _LOGGER.info("✅ SENSOR UPDATED: %s | Available: %s | Value: %s | BLE_active: %s | Coordinator_available: %s", 
-                     self.address, self._attr_available, self._attr_native_value, True, self.coordinator.available)
-        
-    def _set_sensor_properties(self) -> None:
-        """Set sensor properties based on device type."""
-        device_type = self._device_type.lower()
-        
-        # Reset to defaults
-        self._attr_device_class = None
-        self._attr_state_class = SensorStateClass.MEASUREMENT
-        self._attr_native_unit_of_measurement = None
-        self._attr_icon = None
-        
-        # Get short address for display
-        short_address = self.address.replace(":", "")[-6:].upper()
-        
-        # Set properties based on device type
-        # Skip leak sensors - they should be handled by binary sensor
-        if "leak" in device_type:
-            # Don't create sensor entities for leak sensors
-            return
-            
-        # Skip switch devices - they should be handled by switch platform
-        if "switch" in device_type:
-            # Don't create sensor entities for switch devices
-            return
-            
-        if "temperature" in device_type:
-            self._attr_device_class = SensorDeviceClass.TEMPERATURE
-            self._attr_native_unit_of_measurement = UnitOfTemperature.CELSIUS
-            self._attr_name = f"WePower Temperature Sensor {self._get_professional_device_id()}"
-            self._attr_icon = "mdi:thermometer"
-            
-        elif "humidity" in device_type:
-            self._attr_device_class = SensorDeviceClass.HUMIDITY
-            self._attr_native_unit_of_measurement = PERCENTAGE
-            self._attr_name = f"WePower Humidity Sensor {self._get_professional_device_id()}"
-            self._attr_icon = "mdi:water-percent"
-            
-        elif "pressure" in device_type:
-            self._attr_device_class = SensorDeviceClass.PRESSURE
-            self._attr_native_unit_of_measurement = UnitOfPressure.HPA
-            self._attr_name = f"WePower Pressure Sensor {self._get_professional_device_id()}"
-            self._attr_icon = "mdi:gauge"
-            
-        elif "vibration" in device_type:
-            self._attr_device_class = SensorDeviceClass.VIBRATION
-            self._attr_native_unit_of_measurement = "m/s²"
-            self._attr_name = f"WePower Vibration Sensor {self._get_professional_device_id()}"
-            self._attr_icon = "mdi:vibrate"
-            
-        else:
-            # Generic sensor
-            self._attr_name = f"WePower IoT Sensor {self._get_professional_device_id()}"
-            self._attr_icon = "mdi:chip"
-
-    def _update_device_info(self) -> None:
-        """Update device info with proper name and model."""
-        device_type = self._device_type.lower()
-        
-        # Set model based on device type
-        model_map = {
-            "leak_sensor": "Leak Sensor",
-            "temperature_sensor": "Temperature Sensor",
-            "humidity_sensor": "Humidity Sensor",
-            "pressure_sensor": "Pressure Sensor",
-            "vibration_sensor": "Vibration Sensor",
-            "on_off_switch": "On/Off Switch",
-            "light_switch": "Light Switch",
-            "door_switch": "Door Switch",
-            "toggle_switch": "Toggle Switch",
-            "unknown_device": "IoT Device"
-        }
-        
-        model = model_map.get(device_type, "IoT Sensor")
-        
-        # Set device image based on device type
-        device_image = self._get_device_image(device_type)
-        
-        # Update device info
-        self._attr_device_info = DeviceInfo(
-            identifiers={(DOMAIN, self.address)},
-            name=self._attr_name,
-            manufacturer="WePower Technologies",
-            model=model,
-            sw_version="1.0.0",
+        # Subscribe to device manager updates
+        self.async_on_remove(
+            async_dispatcher_connect(
+                self.hass, SIGNAL_DEVICE_UPDATED, self._handle_update
+            )
         )
         
-        # Set device image if available
-        if device_image:
-            self._attr_device_info["image"] = device_image
-    
-    def _get_device_image(self, device_type: str) -> str:
-        """Get device image URL based on device type."""
-        # Map device types to their corresponding images
-        image_map = {
-            "temperature_sensor": "/local/wepower_iot/temperature_sensor.png",
-            "humidity_sensor": "/local/wepower_iot/humidity_sensor.png",
-            "pressure_sensor": "/local/wepower_iot/pressure_sensor.png",
-            "vibration_sensor": "/local/wepower_iot/vibration_sensor.png",
-            "leak_sensor": "/local/wepower_iot/leak_sensor.png",
-            "on_off_switch": "/local/wepower_iot/switch.png",
-            "light_switch": "/local/wepower_iot/light_switch.png",
-            "door_switch": "/local/wepower_iot/door_sensor.png",
-            "toggle_switch": "/local/wepower_iot/toggle_switch.png",
-        }
+    def _handle_update(self, data):
+        """Handle device manager updates."""
+        self._update_state()
+        # Schedule the state write in the main event loop
+        self.hass.loop.call_soon_threadsafe(
+            lambda: self.hass.async_create_task(self._async_write_state())
+        )
         
-        return image_map.get(device_type.lower(), "/local/wepower_iot/iot_sensor.png")
-            
-    def _extract_sensor_value(self, data: Dict[str, Any]) -> None:
-        """Extract sensor value from coordinator data."""
-        _LOGGER.info("🔍 EXTRACTING SENSOR VALUE: %s | Data: %s", self.address, data)
+    async def _async_write_state(self):
+        """Async helper to write state."""
+        self.async_write_ha_state()
         
-        # Try to get sensor value from sensor_data
-        sensor_data = data.get("sensor_data", {})
-        _LOGGER.info("📊 SENSOR DATA: %s | Sensor data: %s", self.address, sensor_data)
-        
-        # Skip leak sensors - they should be handled by binary sensor
-        if "leak_detected" in sensor_data:
-            # Don't process leak sensors in regular sensor
-            _LOGGER.info("💧 LEAK SENSOR SKIPPED: %s | Leak detected: %s (handled by binary sensor)", 
-                        self.address, sensor_data["leak_detected"])
-            
-        elif "temperature" in sensor_data:
-            self._attr_native_value = sensor_data["temperature"]
-            _LOGGER.info("🌡️ TEMPERATURE SENSOR: %s | Temperature: %s", 
-                        self.address, self._attr_native_value)
-            
-        elif "humidity" in sensor_data:
-            self._attr_native_value = sensor_data["humidity"]
-            _LOGGER.info("💧 HUMIDITY SENSOR: %s | Humidity: %s", 
-                        self.address, self._attr_native_value)
-            
-        elif "pressure" in sensor_data:
-            self._attr_native_value = sensor_data["pressure"]
-            _LOGGER.info("📊 PRESSURE SENSOR: %s | Pressure: %s", 
-                        self.address, self._attr_native_value)
-            
-        elif "vibration" in sensor_data:
-            self._attr_native_value = sensor_data["vibration"]
-            _LOGGER.info("📳 VIBRATION SENSOR: %s | Vibration: %s", 
-                        self.address, self._attr_native_value)
-            
-        elif "battery_level" in data and data["battery_level"] is not None:
-            # Use battery level as a fallback sensor value
-            self._attr_native_value = data["battery_level"]
-            _LOGGER.info("🔋 BATTERY LEVEL: %s | Battery: %s", 
-                        self.address, self._attr_native_value)
-            
-        else:
-            # No specific sensor value found, use RSSI as a signal strength indicator
-            rssi = data.get("rssi")
-            if rssi is not None:
-                # Convert RSSI to a percentage (rough approximation)
-                # RSSI typically ranges from -100 (very weak) to -30 (very strong)
-                signal_percentage = max(0, min(100, (rssi + 100) * 100 / 70))
-                self._attr_native_value = round(signal_percentage, 1)
-                _LOGGER.info("📶 RSSI SIGNAL: %s | RSSI: %s dBm | Signal: %s%%", 
-                            self.address, rssi, self._attr_native_value)
-            else:
-                self._attr_native_value = None
-                _LOGGER.warning("⚠️ NO SENSOR VALUE: %s | No RSSI or sensor data found", self.address)
-
     async def async_update(self) -> None:
         """Update sensor state."""
-        await self.coordinator.async_request_refresh()
+        self._update_state()
+
+
+class WePowerIoTZigbeeSensor(BinarySensorEntity):
+    """Representation of Zigbee connection status."""
+
+    def __init__(self, device_manager):
+        """Initialize the Zigbee sensor."""
+        self.device_manager = device_manager
+        self._attr_name = "WePower IoT Zigbee Connected"
+        self._attr_unique_id = f"{DOMAIN}_zigbee_connected"
+        self._attr_device_class = BinarySensorDeviceClass.CONNECTIVITY
+        self._attr_icon = "mdi:zigbee"
+        self._attr_should_poll = False
+        
+        # Set device info with custom icon
+        self._attr_device_info = DeviceInfo(
+            identifiers={(DOMAIN, "zigbee_dongle")},
+            name="WePower IoT Zigbee Dongle",
+            manufacturer="WePower Technologies",
+            model="Zigbee Dongle",
+            sw_version="1.0.0",
+            configuration_url=f"https://github.com/wepower/wepower-iot-homeassistant",
+            image="/local/wepower_iot/zigbee_dongle.png",
+        )
+        
+        # Set custom icon for Zigbee dongle
+        self._attr_icon = "mdi:zigbee"
+        
+        # Set initial state
+        self._update_state()
+        
+    def _update_state(self):
+        """Update sensor state from device manager."""
+        # Check if any Zigbee devices are configured
+        zigbee_devices = [d for d in self.device_manager.get_all_devices() 
+                         if d.get("device_type") == "zigbee"]
+        
+        self._attr_is_on = len(zigbee_devices) > 0
+        
+    @property
+    def extra_state_attributes(self) -> Dict[str, Any]:
+        """Return entity specific state attributes."""
+        zigbee_devices = [d for d in self.device_manager.get_all_devices() 
+                         if d.get("device_type") == "zigbee"]
+        
+        return {
+            "device_count": len(zigbee_devices),
+            "configured_devices": [d.get("device_id") for d in zigbee_devices],
+            "last_update": datetime.now(timezone.utc).isoformat(),
+        }
+        
+    async def async_added_to_hass(self) -> None:
+        """Call when entity is added to hass."""
+        # Subscribe to device manager updates
+        self.async_on_remove(
+            async_dispatcher_connect(
+                self.hass, SIGNAL_DEVICE_UPDATED, self._handle_update
+            )
+        )
+        
+    def _handle_update(self, data):
+        """Handle device manager updates."""
+        self._update_state()
+        # Schedule the state write in the main event loop
+        self.hass.loop.call_soon_threadsafe(
+            lambda: self.hass.async_create_task(self._async_write_state())
+        )
+        
+    async def _async_write_state(self):
+        """Async helper to write state."""
+        self.async_write_ha_state()
+        
+    async def async_update(self) -> None:
+        """Update sensor state."""
+        self._update_state()
