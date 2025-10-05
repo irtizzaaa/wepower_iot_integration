@@ -224,9 +224,9 @@ class GemnsBLESwitch(SwitchEntity):
         # Set model based on device type
         model_map = {
             "leak_sensor": "Leak Sensor",
-            "temperature_sensor": "Temperature Sensor",
-            "humidity_sensor": "Humidity Sensor",
-            "pressure_sensor": "Pressure Sensor",
+            "button": "Button",
+            "vibration_sensor": "Vibration Monitor",
+            "two_way_switch": "Two Way Switch",
             "vibration_sensor": "Vibration Sensor",
             "on_off_switch": "On/Off Switch",
             "light_switch": "Light Switch",
