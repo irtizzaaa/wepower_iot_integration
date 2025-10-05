@@ -204,7 +204,7 @@ class GemnsLight(LightEntity):
                 
             # Send command
             await self.device_manager.publish_mqtt(
-                f"gems/device/{self.device_id}/command",
+                f"gemns/device/{self.device_id}/command",
                 json.dumps(turn_on_message)
             )
             
@@ -246,7 +246,7 @@ class GemnsLight(LightEntity):
                 turn_off_message["transition"] = transition
                 
             await self.device_manager.publish_mqtt(
-                f"gems/device/{self.device_id}/command",
+                f"gemns/device/{self.device_id}/command",
                 json.dumps(turn_off_message)
             )
             
