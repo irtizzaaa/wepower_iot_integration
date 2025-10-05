@@ -1,7 +1,7 @@
-# WePower IoT Device Management Dashboard
+# Gemns Device Management Dashboard
 # Add this to your Lovelace dashboard
 
-title: WePower IoT Device Management
+title: Gemns Device Management
 views:
   - title: Devices
     path: devices
@@ -10,8 +10,8 @@ views:
     cards:
       # Header Card
       - type: custom:button-card
-        name: WePower IoT Status
-        entity: binary_sensor.wepower_iot_ble_connected
+        name: Gemns Status
+        entity: binary_sensor.gems_ble_connected
         layout: vertical
         size: 25%
         state:
@@ -30,12 +30,12 @@ views:
             - margin: 5px
         custom_fields:
           ble_status: >
-            [[[ return states['binary_sensor.wepower_iot_ble_connected'].state === 'on' ? '✅ BLE Connected' : '❌ BLE Disconnected' ]]]
+            [[[ return states['binary_sensor.gems_ble_connected'].state === 'on' ? '✅ BLE Connected' : '❌ BLE Disconnected' ]]]
 
       # Zigbee Status Card
       - type: custom:button-card
         name: Zigbee Status
-        entity: binary_sensor.wepower_iot_zigbee_connected
+        entity: binary_sensor.gems_zigbee_connected
         layout: vertical
         size: 25%
         state:
@@ -54,7 +54,7 @@ views:
             - margin: 5px
         custom_fields:
           zigbee_status: >
-            [[[ return states['binary_sensor.wepower_iot_zigbee_connected'].state === 'on' ? '✅ Zigbee Connected' : '❌ Zigbee Disconnected' ]]]
+            [[[ return states['binary_sensor.gems_zigbee_connected'].state === 'on' ? '✅ Zigbee Connected' : '❌ Zigbee Disconnected' ]]]
 
       # Add Device Button
       - type: custom:button-card
@@ -63,7 +63,7 @@ views:
         size: 25%
         tap_action:
           action: call-service
-          service: wepower_iot.add_device
+          service: gems.add_device
           service_data:
             device_id: "test_device_001"
             device_type: "ble"
@@ -88,7 +88,7 @@ views:
         size: 25%
         tap_action:
           action: call-service
-          service: wepower_iot.scan_devices
+          service: gems.scan_devices
         styles:
           card:
             - height: 80px
@@ -104,11 +104,11 @@ views:
       - type: entities
         title: Connected Devices
         entities:
-          - entity: sensor.wepower_iot_test_ble_leak_sensor
+          - entity: sensor.gems_test_ble_leak_sensor
             name: "Test BLE Leak Sensor"
-          - entity: light.wepower_iot_test_zigbee_light_switch
+          - entity: light.gems_test_zigbee_light_switch
             name: "Test Zigbee Light Switch"
-          - entity: sensor.wepower_iot_test_ble_temperature
+          - entity: sensor.gems_test_ble_temperature
             name: "Test BLE Temperature Sensor"
         show_header_toggle: false
         state_color: true
@@ -116,14 +116,14 @@ views:
       # BLE Toggle
       - type: custom:button-card
         name: BLE Toggle
-        entity: input_boolean.wepower_iot_ble_enabled
+        entity: input_boolean.gems_ble_enabled
         size: 50%
         tap_action:
           action: call-service
-          service: wepower_iot.toggle_ble
+          service: gems.toggle_ble
           service_data:
             enabled: >
-              [[[ return states['input_boolean.wepower_iot_ble_enabled'].state === 'off' ]]]
+              [[[ return states['input_boolean.gems_ble_enabled'].state === 'off' ]]]
         styles:
           card:
             - height: 60px
@@ -133,19 +133,19 @@ views:
             - margin: 5px
         custom_fields:
           ble_toggle: >
-            [[[ return states['input_boolean.wepower_iot_ble_enabled'].state === 'on' ? '🔄 Disable BLE' : '🔄 Enable BLE' ]]]
+            [[[ return states['input_boolean.gems_ble_enabled'].state === 'on' ? '🔄 Disable BLE' : '🔄 Enable BLE' ]]]
 
       # Zigbee Toggle
       - type: custom:button-card
         name: Zigbee Toggle
-        entity: input_boolean.wepower_iot_zigbee_enabled
+        entity: input_boolean.gems_zigbee_enabled
         size: 50%
         tap_action:
           action: call-service
-          service: wepower_iot.toggle_zigbee
+          service: gems.toggle_zigbee
           service_data:
             enabled: >
-              [[[ return states['input_boolean.wepower_iot_zigbee_enabled'].state === 'off' ]]]
+              [[[ return states['input_boolean.gems_zigbee_enabled'].state === 'off' ]]]
         styles:
           card:
             - height: 60px
@@ -155,7 +155,7 @@ views:
             - margin: 5px
         custom_fields:
           zigbee_toggle: >
-            [[[ return states['input_boolean.wepower_iot_zigbee_enabled'].state === 'on' ? '🔄 Disable Zigbee' : '🔄 Enable Zigbee' ]]]
+            [[[ return states['input_boolean.gems_zigbee_enabled'].state === 'on' ? '🔄 Disable Zigbee' : '🔄 Enable Zigbee' ]]]
 
       # Manual Device Entry Form
       - type: custom:hui-element
@@ -203,4 +203,4 @@ views:
                     value: "v1_auto"
         submit_action:
           action: call-service
-          service: wepower_iot.add_device
+          service: gems.add_device
