@@ -1,4 +1,4 @@
-"""BLE binary sensor platform for WePower IoT integration."""
+"""BLE binary sensor platform for Gemns integration."""
 
 import logging
 from typing import Any, Dict, Optional
@@ -14,7 +14,7 @@ from homeassistant.helpers.entity_platform import AddEntitiesCallback
 from homeassistant.helpers.entity import DeviceInfo
 
 from .const import DOMAIN, CONF_ADDRESS, CONF_NAME
-from .ble_coordinator import WePowerIoTBluetoothProcessorCoordinator
+from .ble_coordinator import GemnsBluetoothProcessorCoordinator
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -24,7 +24,7 @@ async def async_setup_entry(
     config_entry: ConfigEntry,
     async_add_entities: AddEntitiesCallback,
 ) -> None:
-    """Set up WePower IoT BLE binary sensors from a config entry."""
+    """Set up Gemns BLE binary sensors from a config entry."""
     _LOGGER.info("Setting up BLE binary sensor for entry %s", config_entry.entry_id)
     address = config_entry.unique_id
     if not address:
@@ -48,19 +48,19 @@ async def async_setup_entry(
     entities = []
     
     # Create a binary sensor entity for leak detection
-    binary_sensor_entity = WePowerIoTBLEBinarySensor(coordinator, config_entry)
+    binary_sensor_entity = GemnsBLEBinarySensor(coordinator, config_entry)
     entities.append(binary_sensor_entity)
     
     if entities:
         async_add_entities(entities)
 
 
-class WePowerIoTBLEBinarySensor(BinarySensorEntity):
-    """Representation of a WePower IoT BLE binary sensor."""
+class GemnsBLEBinarySensor(BinarySensorEntity):
+    """Representation of a Gemns BLE binary sensor."""
 
     def __init__(
         self,
-        coordinator: WePowerIoTBluetoothProcessorCoordinator,
+        coordinator: GemnsBluetoothProcessorCoordinator,
         config_entry: ConfigEntry,
     ) -> None:
         """Initialize the BLE binary sensor."""
@@ -69,7 +69,7 @@ class WePowerIoTBLEBinarySensor(BinarySensorEntity):
         # Don't store address statically - get it dynamically from config data
         
         # Set up basic entity properties
-        self._attr_name = config_entry.data.get(CONF_NAME, "WePower IoT Device")
+        self._attr_name = config_entry.data.get(CONF_NAME, "Gemns Device")
         self._attr_unique_id = f"{DOMAIN}_{config_entry.entry_id}_binary"
         self._attr_should_poll = False
         
@@ -77,7 +77,7 @@ class WePowerIoTBLEBinarySensor(BinarySensorEntity):
         self._attr_device_info = DeviceInfo(
             identifiers={(DOMAIN, config_entry.entry_id)},
             name=self._attr_name,
-            manufacturer="WePower Technologies",
+            manufacturer="Gemns",
             model="Batteryless IoT Device",  # Generic model, will be updated
             sw_version="1.0.0",
         )
@@ -160,9 +160,10 @@ class WePowerIoTBLEBinarySensor(BinarySensorEntity):
     def _update_from_coordinator(self) -> None:
         """Update binary sensor state from coordinator data."""
         if not self.coordinator.data:
-            # For event-driven devices, stay available even without recent data
+            # Simple restart detection: if device exists but no data, default to off
             self._attr_available = True
-            _LOGGER.debug("BLE binary sensor %s: No coordinator data - normal for event-driven devices", self.address)
+            self._attr_is_on = False  # Default to off when device restarts
+            _LOGGER.debug("BLE binary sensor %s: No coordinator data - defaulting to off (restart scenario)", self.address)
             return
             
         data = self.coordinator.data
@@ -170,10 +171,10 @@ class WePowerIoTBLEBinarySensor(BinarySensorEntity):
         
         # Update device type and name from coordinator data
         self._device_type = data.get("device_type", "unknown")
-        coordinator_name = data.get("name", "WePower IoT Device")
+        coordinator_name = data.get("name", "Gemns Device")
         
         # Update the entity name if coordinator has a better name
-        if coordinator_name != "WePower IoT Device":
+        if coordinator_name != "Gemns Device":
             self._attr_name = coordinator_name
         
         _LOGGER.info("🏷️ DEVICE TYPE: %s | Type: %s | Name: %s", self.address, self._device_type, self._attr_name)
@@ -200,35 +201,35 @@ class WePowerIoTBLEBinarySensor(BinarySensorEntity):
         if device_type == "leak_sensor":
             # DEVICE_TYPE_LEAK_SENSOR = 4 - moisture device class
             self._attr_device_class = BinarySensorDeviceClass.MOISTURE
-            self._attr_name = f"WePower Leak Sensor {self._get_professional_device_id()}"
+            self._attr_name = f"Gemns Leak Sensor {self._get_professional_device_id()}"
             self._attr_icon = "mdi:water"
             
         elif device_type == "vibration_sensor":
             # DEVICE_TYPE_VIBRATION_MONITOR = 2 - vibration device class
             self._attr_device_class = BinarySensorDeviceClass.VIBRATION
-            self._attr_name = f"WePower Vibration Monitor {self._get_professional_device_id()}"
+            self._attr_name = f"Gemns Vibration Monitor {self._get_professional_device_id()}"
             self._attr_icon = "mdi:vibrate"
             
         elif device_type == "two_way_switch":
             # DEVICE_TYPE_TWO_WAY_SWITCH = 3 - opening device class (on/off)
             self._attr_device_class = BinarySensorDeviceClass.OPENING
-            self._attr_name = f"WePower Two-Way Switch {self._get_professional_device_id()}"
+            self._attr_name = f"Gemns Two-Way Switch {self._get_professional_device_id()}"
             self._attr_icon = "mdi:toggle-switch"
             
         elif device_type in ["button", "legacy"]:
             # DEVICE_TYPE_BUTTON = 1, DEVICE_TYPE_LEGACY = 0 - problem device class
             self._attr_device_class = BinarySensorDeviceClass.PROBLEM
             if device_type == "button":
-                self._attr_name = f"WePower Button {self._get_professional_device_id()}"
+                self._attr_name = f"Gemns Button {self._get_professional_device_id()}"
                 self._attr_icon = "mdi:gesture-tap-button"
             else:  # legacy
-                self._attr_name = f"WePower Legacy Device {self._get_professional_device_id()}"
+                self._attr_name = f"Gemns Legacy Device {self._get_professional_device_id()}"
                 self._attr_icon = "mdi:chip"
             
         else:
             # Unknown device type - generic binary sensor
             self._attr_device_class = BinarySensorDeviceClass.PROBLEM
-            self._attr_name = f"WePower IoT Alert {self._get_professional_device_id()}"
+            self._attr_name = f"Gemns Alert {self._get_professional_device_id()}"
             self._attr_icon = "mdi:alert"
 
     def _update_device_info(self) -> None:
@@ -264,7 +265,7 @@ class WePowerIoTBLEBinarySensor(BinarySensorEntity):
         self._attr_device_info = DeviceInfo(
             identifiers={(DOMAIN, self.config_entry.entry_id)},
             name=self._attr_name,
-            manufacturer="WePower Technologies",
+            manufacturer="Gemns",
             model=model,
             sw_version="1.0.0",
             suggested_area=suggested_area,
@@ -277,7 +278,7 @@ class WePowerIoTBLEBinarySensor(BinarySensorEntity):
     def _get_professional_device_id(self) -> str:
         """Generate a professional device identifier from MAC address."""
         # Handle test/discovery addresses
-        if self.address.startswith("wepower_") or self.address == "00:00:00:00:00:00":
+        if self.address.startswith("gems_") or self.address == "00:00:00:00:00:00":
             # For test devices, use entry ID to generate a consistent ID
             entry_id = self.config_entry.entry_id
             # Extract numbers from entry ID or use a hash
@@ -299,14 +300,14 @@ class WePowerIoTBLEBinarySensor(BinarySensorEntity):
         """Get device image URL based on device type."""
         # Map device types to their corresponding images
         image_map = {
-            "leak_sensor": "/local/wepower_iot/leak_sensor.png",
-            "vibration_sensor": "/local/wepower_iot/vibration_sensor.png", 
-            "two_way_switch": "/local/wepower_iot/switch.png",
-            "button": "/local/wepower_iot/button.png",
-            "legacy": "/local/wepower_iot/legacy_device.png",
+            "leak_sensor": "/local/gems/leak_sensor.png",
+            "vibration_sensor": "/local/gems/vibration_sensor.png", 
+            "two_way_switch": "/local/gems/switch.png",
+            "button": "/local/gems/button.png",
+            "legacy": "/local/gems/legacy_device.png",
         }
         
-        return image_map.get(device_type.lower(), "/local/wepower_iot/iot_device.png")
+        return image_map.get(device_type.lower(), "/local/gems/iot_device.png")
             
     def _extract_binary_sensor_value(self, data: Dict[str, Any]) -> None:
         """Extract binary sensor value from coordinator data."""
