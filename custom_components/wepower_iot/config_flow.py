@@ -1,4 +1,4 @@
-"""Config flow for Gemns integration."""
+"""Config flow for Gemns™ IoT integration."""
 
 import logging
 from typing import Any
@@ -30,7 +30,7 @@ _LOGGER = logging.getLogger(__name__)
 
 
 class GemnsConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
-    """Handle a config flow for Gemns."""
+    """Handle a config flow for Gemns™ IoT."""
 
     VERSION = 1
     
@@ -119,7 +119,7 @@ class GemnsConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
 
         # Create the config entry
         return self.async_create_entry(
-            title="Gemns (MQTT)",
+            title="Gemns™ IoT (MQTT)",
             data={
                 CONF_MQTT_BROKER: mqtt_broker,
                 CONF_MQTT_USERNAME: user_input.get(CONF_MQTT_USERNAME, ""),
@@ -134,7 +134,7 @@ class GemnsConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
         """Handle BLE configuration step - automatic MAC population from beacon."""
         if user_input is not None:
             decryption_key = user_input[CONF_DECRYPTION_KEY]
-            device_name = user_input.get(CONF_DEVICE_NAME, "Gemns Device")
+            device_name = user_input.get(CONF_DEVICE_NAME, "Gemns™ IoT Device")
             device_type = int(user_input.get(CONF_DEVICE_TYPE, "4"))
             
             # Validate decryption key format
@@ -175,7 +175,7 @@ class GemnsConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
             # This will be used by the coordinator to identify the device
             unique_id = f"gemns_ble_{device_name.lower().replace(' ', '_')}"
             address = "00:00:00:00:00:00"  # Placeholder - will be updated by Bluetooth integration
-            name = "Gemns Device"
+            name = "Gemns™ IoT Device"
             
             # Set the unique ID for this entry
             await self.async_set_unique_id(unique_id)
@@ -206,7 +206,7 @@ class GemnsConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
                 }),
             }),
             description_placeholders={
-                "message": "Gemns BLE Setup\n\nEnter your decryption key to complete setup.\n\nThe MAC address will be automatically detected when your Gemns device is discovered.\n\nDevice Types:\n• Type 1: Button\n• Type 2: Vibration Monitor\n• Type 3: Two Way Switch\n• Type 4: Leak Sensor\n\nDecryption Key: 32-character hex string (16 bytes)",
+                "message": "Gemns™ IoT BLE Setup\n\nEnter your decryption key to complete setup.\n\nThe MAC address will be automatically detected when your Gemns™ IoT device is discovered.\n\nDevice Types:\n• Type 1: Button\n• Type 2: Vibration Monitor\n• Type 3: Two Way Switch\n• Type 4: Leak Sensor\n\nDecryption Key: 32-character hex string (16 bytes)",
                 "integration_icon": "/local/gems/icon.png"
             }
         )
