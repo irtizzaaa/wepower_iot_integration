@@ -68,33 +68,33 @@ async def async_setup_entry(
     
     # Get device type from config to determine which entities to create
     device_type = config_entry.data.get("device_name", "unknown")
-    sensor_type = config_entry.data.get("sensor_type", 4)
+    device_type = config_entry.data.get("device_type", 4)
     
-    _LOGGER.info("Creating entities for device type: %s, sensor_type: %d", device_type, sensor_type)
+    _LOGGER.info("Creating entities for device type: %s, device_type: %d", device_type, device_type)
     
     # Create entities based on device type (matching device_type_t enum)
-    if device_type in ["leak_sensor"] or sensor_type == 4:
+    if device_type in ["leak_sensor"] or device_type == 4:
         # DEVICE_TYPE_LEAK_SENSOR = 4 - create binary sensor only
         from .ble_binary_sensor import GemnsBLEBinarySensor
         binary_sensor_entity = GemnsBLEBinarySensor(coordinator, config_entry)
         entities.append(binary_sensor_entity)
         _LOGGER.info("Created binary sensor entity for leak sensor")
         
-    elif device_type in ["vibration_sensor"] or sensor_type == 2:
+    elif device_type in ["vibration_sensor"] or device_type == 2:
         # DEVICE_TYPE_VIBRATION_MONITOR = 2 - create binary sensor only
         from .ble_binary_sensor import GemnsBLEBinarySensor
         binary_sensor_entity = GemnsBLEBinarySensor(coordinator, config_entry)
         entities.append(binary_sensor_entity)
         _LOGGER.info("Created binary sensor entity for vibration monitor")
         
-    elif device_type in ["two_way_switch"] or sensor_type == 3:
+    elif device_type in ["two_way_switch"] or device_type == 3:
         # DEVICE_TYPE_TWO_WAY_SWITCH = 3 - create binary sensor only
         from .ble_binary_sensor import GemnsBLEBinarySensor
         binary_sensor_entity = GemnsBLEBinarySensor(coordinator, config_entry)
         entities.append(binary_sensor_entity)
         _LOGGER.info("Created binary sensor entity for two-way switch")
         
-    elif device_type in ["button", "legacy"] or sensor_type in [0, 1]:
+    elif device_type in ["button", "legacy"] or device_type in [0, 1]:
         # DEVICE_TYPE_LEGACY = 0, DEVICE_TYPE_BUTTON = 1 - create binary sensor only
         from .ble_binary_sensor import GemnsBLEBinarySensor
         binary_sensor_entity = GemnsBLEBinarySensor(coordinator, config_entry)
@@ -272,19 +272,19 @@ class GemnsBLESensor(SensorEntity):
         if "temperature" in device_type:
             self._attr_device_class = SensorDeviceClass.TEMPERATURE
             self._attr_native_unit_of_measurement = UnitOfTemperature.CELSIUS
-            self._attr_name = f"Gemns Temperature Sensor {self._get_professional_device_id()}"
+            self._attr_name = f"Gemns Button {self._get_professional_device_id()}"
             self._attr_icon = "mdi:thermometer"
             
         elif "humidity" in device_type:
             self._attr_device_class = SensorDeviceClass.HUMIDITY
             self._attr_native_unit_of_measurement = PERCENTAGE
-            self._attr_name = f"Gemns Humidity Sensor {self._get_professional_device_id()}"
+            self._attr_name = f"Gemns Vibration Monitor {self._get_professional_device_id()}"
             self._attr_icon = "mdi:water-percent"
             
         elif "pressure" in device_type:
             self._attr_device_class = SensorDeviceClass.PRESSURE
             self._attr_native_unit_of_measurement = UnitOfPressure.HPA
-            self._attr_name = f"Gemns Pressure Sensor {self._get_professional_device_id()}"
+            self._attr_name = f"Gemns Two Way Switch {self._get_professional_device_id()}"
             self._attr_icon = "mdi:gauge"
             
         elif "vibration" in device_type:
@@ -305,9 +305,9 @@ class GemnsBLESensor(SensorEntity):
         # Set model based on device type
         model_map = {
             "leak_sensor": "Leak Sensor",
-            "temperature_sensor": "Temperature Sensor",
-            "humidity_sensor": "Humidity Sensor",
-            "pressure_sensor": "Pressure Sensor",
+            "button": "Button",
+            "vibration_sensor": "Vibration Monitor",
+            "two_way_switch": "Two Way Switch",
             "vibration_sensor": "Vibration Sensor",
             "on_off_switch": "On/Off Switch",
             "light_switch": "Light Switch",
