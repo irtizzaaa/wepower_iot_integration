@@ -1,4 +1,4 @@
-"""Light platform for WePower IoT integration."""
+"""Light platform for Gemns integration."""
 
 import logging
 from typing import Any, Dict, Optional, Tuple
@@ -44,7 +44,7 @@ async def async_setup_entry(
     config_entry: ConfigEntry,
     async_add_entities: AddEntitiesCallback,
 ) -> None:
-    """Set up WePower IoT lights from a config entry."""
+    """Set up Gemns lights from a config entry."""
     global _entities, _add_entities_callback
     
     # Store the callback for dynamic entity creation
@@ -61,7 +61,7 @@ async def async_setup_entry(
     # Create light entities
     entities = []
     for device in light_devices:
-        light_entity = WePowerIoTLight(device_manager, device)
+        light_entity = GemnsLight(device_manager, device)
         entities.append(light_entity)
         _entities.append(light_entity)
         
@@ -78,7 +78,7 @@ async def async_setup_entry(
             
             if not existing_entity:
                 # Create new entity
-                new_entity = WePowerIoTLight(device_manager, device_data)
+                new_entity = GemnsLight(device_manager, device_data)
                 _entities.append(new_entity)
                 _add_entities_callback([new_entity])
                 _LOGGER.info(f"Created new light entity for device: {device_id}")
@@ -87,8 +87,8 @@ async def async_setup_entry(
     async_dispatcher_connect(hass, SIGNAL_DEVICE_ADDED, handle_new_device)
 
 
-class WePowerIoTLight(LightEntity):
-    """Representation of a WePower IoT light."""
+class GemnsLight(LightEntity):
+    """Representation of a Gemns light."""
 
     def __init__(self, device_manager, device: Dict[str, Any]):
         """Initialize the light."""
@@ -103,7 +103,7 @@ class WePowerIoTLight(LightEntity):
         self._attr_device_info = DeviceInfo(
             identifiers={(DOMAIN, self.device_id)},
             name=self._attr_name,
-            manufacturer="WePower",
+            manufacturer="Gemns",
             model=device.get("device_type", "Unknown"),
             sw_version=device.get("firmware_version", "1.0.0"),
         )
@@ -204,7 +204,7 @@ class WePowerIoTLight(LightEntity):
                 
             # Send command
             await self.device_manager.publish_mqtt(
-                f"wepower_iot/device/{self.device_id}/command",
+                f"gems/device/{self.device_id}/command",
                 json.dumps(turn_on_message)
             )
             
@@ -246,7 +246,7 @@ class WePowerIoTLight(LightEntity):
                 turn_off_message["transition"] = transition
                 
             await self.device_manager.publish_mqtt(
-                f"wepower_iot/device/{self.device_id}/command",
+                f"gems/device/{self.device_id}/command",
                 json.dumps(turn_off_message)
             )
             
