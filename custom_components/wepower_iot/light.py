@@ -1,4 +1,4 @@
-"""Light platform for Gemns integration."""
+"""Light platform for Gemns™ IoT integration."""
 
 import logging
 from typing import Any, Dict, Optional, Tuple
@@ -44,7 +44,7 @@ async def async_setup_entry(
     config_entry: ConfigEntry,
     async_add_entities: AddEntitiesCallback,
 ) -> None:
-    """Set up Gemns lights from a config entry."""
+    """Set up Gemns™ IoT lights from a config entry."""
     global _entities, _add_entities_callback
     
     # Store the callback for dynamic entity creation
@@ -88,7 +88,7 @@ async def async_setup_entry(
 
 
 class GemnsLight(LightEntity):
-    """Representation of a Gemns light."""
+    """Representation of a Gemns™ IoT light."""
 
     def __init__(self, device_manager, device: Dict[str, Any]):
         """Initialize the light."""
@@ -103,7 +103,7 @@ class GemnsLight(LightEntity):
         self._attr_device_info = DeviceInfo(
             identifiers={(DOMAIN, self.device_id)},
             name=self._attr_name,
-            manufacturer="Gemns",
+            manufacturer="Gemns™ IoT",
             model=device.get("device_type", "Unknown"),
             sw_version=device.get("firmware_version", "1.0.0"),
         )
