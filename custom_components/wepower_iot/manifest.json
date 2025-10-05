@@ -1,18 +1,18 @@
 {
-  "domain": "wepower_iot",
-  "name": "WePower IoT",
+  "domain": "gems",
+  "name": "Gemns",
   "integration_type": "device",
   "bluetooth": [
     {
-      "local_name": "WePower",
+      "local_name": "Gemns",
       "connectable": false
     },
     {
-      "local_name": "WePower-*",
+      "local_name": "Gemns-*",
       "connectable": false
     },
     {
-      "local_name": "WePower_*",
+      "local_name": "Gemns_*",
       "connectable": false
     },
     {
@@ -25,13 +25,13 @@
       "connectable": false
     }
   ],
-  "codeowners": ["@wepower"],
+  "codeowners": ["@gems"],
   "config_flow": true,
   "dependencies": ["bluetooth"],
-  "documentation": "https://github.com/wepower/wepower-iot-homeassistant",
+  "documentation": "https://github.com/gems/gems-homeassistant",
   "iot_class": "local_push",
-  "loggers": ["wepower_iot_ble"],
+  "loggers": ["gems_ble"],
   "requirements": ["cryptography>=3.0.0"],
-  "version": "1.0.101",
-  "icon": "/local/wepower_iot/icon.png"
+  "version": "1.0.102",
+  "icon": "/local/gems/icon.png"
 }
