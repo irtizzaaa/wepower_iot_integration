@@ -74,7 +74,7 @@ class GemnsBLESensor(BinarySensorEntity):
             manufacturer="Gemns",
             model="BLE Dongle",
             sw_version="1.0.0",
-            configuration_url=f"https://github.com/gems/gems-homeassistant",
+            configuration_url=f"https://github.com/gemns/gemns-homeassistant",
             image="/local/gems/ble_dongle.png",
         )
         
@@ -149,7 +149,7 @@ class GemnsZigbeeSensor(BinarySensorEntity):
             manufacturer="Gemns",
             model="Zigbee Dongle",
             sw_version="1.0.0",
-            configuration_url=f"https://github.com/gems/gems-homeassistant",
+            configuration_url=f"https://github.com/gemns/gemns-homeassistant",
             image="/local/gems/zigbee_dongle.png",
         )
         
