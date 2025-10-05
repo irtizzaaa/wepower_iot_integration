@@ -1,7 +1,7 @@
 """Constants for the Gemns integration."""
 from typing import Final
 
-DOMAIN: Final = "gems"
+DOMAIN: Final = "gemns"
 
 # Configuration keys
 CONF_MQTT_BROKER: Final = "mqtt_broker"
@@ -18,9 +18,9 @@ DEFAULT_HEARTBEAT_INTERVAL: Final = 10.0
 DEFAULT_ENABLE_ZIGBEE: Final = True
 
 # MQTT Topics
-MQTT_TOPIC_STATUS: Final = "gems/status"
-MQTT_TOPIC_CONTROL: Final = "gems/control"
-MQTT_TOPIC_DEVICE: Final = "gems/device"
+MQTT_TOPIC_STATUS: Final = "gemns/status"
+MQTT_TOPIC_CONTROL: Final = "gemns/control"
+MQTT_TOPIC_DEVICE: Final = "gemns/device"
 
 # Device types
 DEVICE_TYPE_BLE: Final = "ble"
@@ -51,7 +51,7 @@ BLE_DISCOVERY_MODE_V1_AUTO: Final = "v1_auto"
 
 # Integration name and version
 INTEGRATION_NAME: Final = "Gemns"
-INTEGRATION_VERSION: Final = "1.0.106"
+INTEGRATION_VERSION: Final = "1.1.0"
 
 # BLE Packet Format Constants
 BLE_COMPANY_ID: Final = 0x5750  # Gemns company ID
@@ -81,4 +81,3 @@ SWITCH_TYPE_TOGGLE: Final = 9
 # Signals
 SIGNAL_DEVICE_UPDATED: Final = f"{DOMAIN}_device_updated"
 SIGNAL_DEVICE_ADDED: Final = f"{DOMAIN}_device_added"
-
