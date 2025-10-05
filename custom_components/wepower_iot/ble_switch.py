@@ -11,7 +11,7 @@ from homeassistant.helpers.entity_platform import AddEntitiesCallback
 from homeassistant.helpers.entity import DeviceInfo
 
 from .const import DOMAIN, CONF_ADDRESS
-from .ble_coordinator import WePowerIoTBluetoothProcessorCoordinator
+from .ble_coordinator import GemnsBluetoothProcessorCoordinator
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -45,19 +45,19 @@ async def async_setup_entry(
     entities = []
     
     # Create a switch entity for switch devices
-    switch_entity = WePowerIoTBLESwitch(coordinator, config_entry)
+    switch_entity = GemnsBLESwitch(coordinator, config_entry)
     entities.append(switch_entity)
     
     if entities:
         async_add_entities(entities)
 
 
-class WePowerIoTBLESwitch(SwitchEntity):
-    """Representation of a WePower IoT BLE switch."""
+class GemnsBLESwitch(SwitchEntity):
+    """Representation of a Gemns BLE switch."""
 
     def __init__(
         self,
-        coordinator: WePowerIoTBluetoothProcessorCoordinator,
+        coordinator: GemnsBluetoothProcessorCoordinator,
         config_entry: ConfigEntry,
     ) -> None:
         """Initialize the BLE switch."""
@@ -66,7 +66,7 @@ class WePowerIoTBLESwitch(SwitchEntity):
         # Don't store address statically - get it dynamically from config data
         
         # Set up basic entity properties
-        self._attr_name = config_entry.data.get("name", "WePower IoT Device")
+        self._attr_name = config_entry.data.get("name", "Gemns Device")
         self._attr_unique_id = f"{DOMAIN}_{config_entry.entry_id}_switch"
         self._attr_should_poll = False
         
@@ -74,7 +74,7 @@ class WePowerIoTBLESwitch(SwitchEntity):
         self._attr_device_info = DeviceInfo(
             identifiers={(DOMAIN, config_entry.entry_id)},
             name=self._attr_name,
-            manufacturer="WePower",
+            manufacturer="Gemns",
             model="BLE Switch",
             sw_version="1.0.0",
         )
@@ -198,19 +198,19 @@ class WePowerIoTBLESwitch(SwitchEntity):
         
         # Set properties based on device type
         if "light" in device_type:
-            self._attr_name = f"WePower Light Switch {self._get_professional_device_id()}"
+            self._attr_name = f"Gemns Light Switch {self._get_professional_device_id()}"
             self._attr_icon = "mdi:lightbulb"
             
         elif "door" in device_type:
-            self._attr_name = f"WePower Door Switch {self._get_professional_device_id()}"
+            self._attr_name = f"Gemns Door Switch {self._get_professional_device_id()}"
             self._attr_icon = "mdi:door"
             
         elif "toggle" in device_type:
-            self._attr_name = f"WePower Toggle Switch {self._get_professional_device_id()}"
+            self._attr_name = f"Gemns Toggle Switch {self._get_professional_device_id()}"
             self._attr_icon = "mdi:toggle-switch"
             
         elif "switch" in device_type:
-            self._attr_name = f"WePower On/Off Switch {self._get_professional_device_id()}"
+            self._attr_name = f"Gemns On/Off Switch {self._get_professional_device_id()}"
             self._attr_icon = "mdi:power"
             
         else:
@@ -244,7 +244,7 @@ class WePowerIoTBLESwitch(SwitchEntity):
         self._attr_device_info = DeviceInfo(
             identifiers={(DOMAIN, self.address)},
             name=self._attr_name,
-            manufacturer="WePower Technologies",
+            manufacturer="Gemns",
             model=model,
             sw_version="1.0.0",
         )
