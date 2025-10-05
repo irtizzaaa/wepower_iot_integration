@@ -278,7 +278,7 @@ class GemnsBLEBinarySensor(BinarySensorEntity):
     def _get_professional_device_id(self) -> str:
         """Generate a professional device identifier from MAC address."""
         # Handle test/discovery addresses
-        if self.address.startswith("gems_") or self.address == "00:00:00:00:00:00":
+        if self.address.startswith("gemns_") or self.address == "00:00:00:00:00:00":
             # For test devices, use entry ID to generate a consistent ID
             entry_id = self.config_entry.entry_id
             # Extract numbers from entry ID or use a hash
